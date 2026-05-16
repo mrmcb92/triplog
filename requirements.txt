@@ -2,3 +2,10 @@ streamlit==1.48.1
 pandas==2.3.2
 requests==2.32.3
 openpyxl==3.1.5
+
+# Hartă interactivă (necesară pentru _render_map)
+pydeck==0.9.1
+
+# Google Sheets - opțional, necesar doar dacă GSPREAD_SERVICE_ACCOUNT_JSON și GOOGLE_SHEET_ID sunt configurate în secrets
+# gspread==6.1.2
+# google-auth==2.29.0
