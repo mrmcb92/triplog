@@ -202,10 +202,20 @@ async def export_excel(body: ExportRequest):
 
 # ---- Static / SPA ----
 
+INDEX_PATH = os.path.join("static", "index.html")
+
 if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+@app.get("/")
+async def root():
+    return FileResponse(INDEX_PATH)
+
+
 @app.get("/{full_path:path}")
-async def spa(_: str):
-    return FileResponse("static/index.html")
+async def spa(full_path: str):
+    # Nu interceptăm rutele API
+    if full_path.startswith("api/"):
+        raise HTTPException(404, "Not found")
+    return FileResponse(INDEX_PATH)
