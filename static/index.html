@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1D4ED8" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Foaie de parcurs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #2563EB;
+      --primary-dark: #1D4ED8;
+      --primary-light: #EFF6FF;
+      --primary-border: #BFDBFE;
+      --bg: #F1F5F9;
+      --surface: #FFFFFF;
+      --surface2: #F8FAFC;
+      --text: #1E293B;
+      --muted: #64748B;
+      --border: #E2E8F0;
+      --danger: #EF4444;
+      --danger-light: #FEF2F2;
+      --success: #16A34A;
+      --success-light: #F0FDF4;
+      --warning-light: #FFFBEB;
+      --warning: #D97706;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --radius-xs: 6px;
+      --nav-h: 66px;
+      --header-h: 56px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+
+    #root { display: flex; flex-direction: column; min-height: 100dvh; }
+
+    /* Header */
+    .header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--header-h);
+      background: var(--primary);
+      display: flex; align-items: center; padding: 0 16px;
+      gap: 10px;
+    }
+    .header-icon { font-size: 20px; }
+    .header h1 { font-size: 17px; font-weight: 600; color: #fff; letter-spacing: -0.2px; }
+    .header-badge {
+      margin-left: auto;
+      font-size: 11px; font-weight: 500;
+      background: rgba(255,255,255,0.2); color: #fff;
+      padding: 3px 8px; border-radius: 20px;
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      padding-top: var(--header-h);
+      padding-bottom: calc(var(--nav-h) + 8px);
+      overflow-y: auto;
+    }
+
+    .view { padding: 14px 14px 0; max-width: 640px; margin: 0 auto; }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    /* Inputs */
+    .field { margin-bottom: 10px; position: relative; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      display: block;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      margin-bottom: 5px;
+    }
+    input[type="text"], input[type="date"], select {
+      width: 100%; height: 48px;
+      padding: 0 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 15px; color: var(--text);
+      font-family: inherit;
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s;
+      appearance: none; -webkit-appearance: none;
+    }
+    input[type="text"]:focus, input[type="date"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    input[type="text"]::placeholder { color: #94A3B8; }
+    input[type="date"] { cursor: pointer; }
+
+    .input-wrap { position: relative; }
+    .input-spinner {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    /* Autocomplete dropdown */
+    .candidates {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
+      background: var(--surface);
+      border: 1.5px solid var(--primary-border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow);
+      max-height: 220px; overflow-y: auto;
+      list-style: none;
+    }
+    .candidates li {
+      padding: 12px 14px;
+      font-size: 13.5px; color: var(--text);
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      line-height: 1.4;
+    }
+    .candidates li:last-child { border-bottom: none; }
+    .candidates li:active, .candidates li:hover { background: var(--primary-light); }
+
+    .selected-addr {
+      margin-top: 5px;
+      padding: 7px 10px;
+      background: var(--primary-light);
+      border-radius: var(--radius-xs);
+      font-size: 12.5px; color: var(--primary-dark);
+      display: flex; align-items: flex-start; gap: 6px;
+    }
+    .selected-addr span { flex: 1; }
+
+    /* Stop item */
+    .stop-item {
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    .stop-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .stop-label { font-size: 13px; font-weight: 600; color: var(--muted); }
+    .stop-actions { display: flex; gap: 4px; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 48px; padding: 0 18px;
+      border-radius: var(--radius-sm); border: none; cursor: pointer;
+      font-size: 15px; font-weight: 600; font-family: inherit;
+      transition: all 0.15s; user-select: none;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:disabled { background: #93C5FD; cursor: not-allowed; transform: none; }
+    .btn-outline {
+      background: var(--surface); color: var(--primary);
+      border: 1.5px solid var(--primary-border);
+      width: 100%;
+    }
+    .btn-outline:hover { background: var(--primary-light); }
+    .btn-danger-outline {
+      background: var(--surface); color: var(--danger);
+      border: 1.5px solid #FECACA;
+    }
+    .btn-icon {
+      width: 34px; height: 34px; padding: 0;
+      border-radius: var(--radius-xs); border: 1.5px solid var(--border);
+      background: var(--surface2); color: var(--muted);
+      font-size: 15px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-icon:active { transform: scale(0.94); }
+    .btn-icon:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+    .btn-icon.danger { border-color: #FECACA; color: var(--danger); }
+    .btn-sm {
+      height: 40px; padding: 0 14px; font-size: 14px;
+    }
+
+    /* Toggle / Checkbox */
+    .toggle-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; cursor: pointer; user-select: none;
+    }
+    .toggle {
+      position: relative; width: 44px; height: 26px; flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: #CBD5E1; border-radius: 13px;
+      transition: background 0.2s;
+    }
+    .toggle input:checked + .toggle-track { background: var(--primary); }
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px;
+      background: #fff; border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      transition: transform 0.2s;
+    }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+    .toggle-label { font-size: 15px; color: var(--text); }
+
+    /* Number stepper */
+    .stepper {
+      display: flex; align-items: center; gap: 0; border: 1.5px solid var(--border);
+      border-radius: var(--radius-xs); overflow: hidden; width: fit-content;
+    }
+    .stepper-btn {
+      width: 38px; height: 38px; border: none; background: var(--surface2);
+      color: var(--text); font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s;
+    }
+    .stepper-btn:active { background: var(--border); }
+    .stepper-val {
+      width: 40px; text-align: center; font-size: 15px; font-weight: 600;
+      color: var(--text); border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+      line-height: 38px;
+    }
+
+    /* Segment card */
+    .seg-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .seg-route {
+      display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px;
+    }
+    .seg-dots { display: flex; flex-direction: column; align-items: center; padding-top: 3px; gap: 3px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-start { background: var(--primary); }
+    .dot-end { background: #F97316; }
+    .dot-line { width: 1.5px; height: 18px; background: var(--border); }
+    .seg-addrs { flex: 1; }
+    .seg-from { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.3; }
+    .seg-to { font-size: 14px; color: var(--muted); line-height: 1.3; margin-top: 10px; }
+    .seg-controls { display: flex; align-items: center; justify-content: space-between; }
+    .seg-km { font-size: 17px; font-weight: 700; color: var(--primary); }
+    .seg-km-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+    /* Total bar */
+    .total-bar {
+      background: var(--primary);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .total-label { font-size: 14px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .total-value { font-size: 28px; font-weight: 700; color: #fff; }
+    .total-unit { font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.8); margin-left: 3px; }
+
+    /* Alert */
+    .alert {
+      padding: 12px 14px; border-radius: var(--radius-sm);
+      font-size: 14px; margin-bottom: 10px; line-height: 1.4;
+    }
+    .alert-error { background: var(--danger-light); color: #B91C1C; border: 1px solid #FECACA; }
+    .alert-success { background: var(--success-light); color: #15803D; border: 1px solid #BBF7D0; }
+    .alert-info { background: var(--warning-light); color: var(--warning); border: 1px solid #FDE68A; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      height: var(--nav-h);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .nav-tab {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      cursor: pointer; border: none; background: transparent;
+      padding: 8px 0; transition: all 0.15s;
+      color: var(--muted);
+    }
+    .nav-tab.active { color: var(--primary); }
+    .nav-tab:active { background: var(--primary-light); }
+    .nav-tab .nav-icon { font-size: 22px; }
+    .nav-tab .nav-label { font-size: 11px; font-weight: 500; font-family: inherit; }
+    .nav-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--primary); margin-top: -2px;
+    }
+
+    /* Favorites */
+    .fav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .fav-item:last-child { border-bottom: none; }
+    .fav-name { flex: 1; font-size: 14px; font-weight: 500; }
+    .fav-stops { font-size: 12px; color: var(--muted); }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+    /* Row layout */
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row-between { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+
+    /* Loader overlay */
+    .loader-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(255,255,255,0.85);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px;
+    }
+    .loader-big {
+      width: 44px; height: 44px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .loader-text { font-size: 15px; color: var(--muted); font-weight: 500; }
+
+    /* Export section */
+    .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .empty-sub { font-size: 14px; }
+
+    @media (min-width: 480px) {
+      .view { padding: 18px 18px 0; }
+      .card { padding: 18px; }
+      .stop-item { padding: 14px; }
+    }
+    @media (min-width: 640px) {
+      .bottom-nav { max-width: 640px; left: 50%; transform: translateX(-50%); border-radius: var(--radius) var(--radius) 0 0; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useCallback, useRef, useEffect } = React;
+
+// ---- Utilities ----
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+function uid() {
+  return Math.random().toString(36).slice(2, 8);
+}
+function kmRound(x) {
+  return Math.floor(x * 10 + 0.5) / 10;
+}
+
+// ---- API ----
+async function apiGeocode(q) {
+  const r = await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);
+  if (!r.ok) throw new Error('Eroare geocodare');
+  const d = await r.json();
+  return d.results || [];
+}
+
+async function apiRoute(points) {
+  const r = await fetch('/api/route', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ points }),
+  });
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.detail || 'Eroare rutare');
+  }
+  return r.json();
+}
+
+async function apiExportExcel(rows, total, dateStr) {
+  const r = await fetch('/api/export/excel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rows, total, date_str: dateStr }),
+  });
+  if (!r.ok) throw new Error('Eroare export Excel');
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `foaie_parcurs_${dateStr}.xlsx`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV(rows, dateStr) {
+  const cols = Object.keys(rows[0]);
+  const lines = [cols.join(','), ...rows.map(r => cols.map(c => `"${String(r[c]).replace(/"/g, '""')}"`).join(','))];
+  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `foaie_parcurs_${dateStr}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---- AddressInput Component ----
+function AddressInput({ label, value, display, onTextChange, onSelect, placeholder }) {
+  const [candidates, setCandidates] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const timer = useRef(null);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('touchstart', handleClick);
+    return () => { document.removeEventListener('mousedown', handleClick); document.removeEventListener('touchstart', handleClick); };
+  }, []);
+
+  const handleChange = (e) => {
+    const v = e.target.value;
+    onTextChange(v);
+    clearTimeout(timer.current);
+    if (v.length >= 3) {
+      timer.current = setTimeout(async () => {
+        setLoading(true);
+        try {
+          const r = await apiGeocode(v);
+          setCandidates(r);
+          setOpen(r.length > 0);
+        } catch {}
+        setLoading(false);
+      }, 450);
+    } else {
+      setCandidates([]);
+      setOpen(false);
+    }
+  };
+
+  const handleSelect = (c) => {
+    onSelect(c);
+    setCandidates([]);
+    setOpen(false);
+  };
+
+  return (
+    <div className="field" ref={wrapRef}>
+      {label && <label>{label}</label>}
+      <div className="input-wrap">
+        <input
+          type="text"
+          value={value}
+          onChange={handleChange}
+          onFocus={() => candidates.length > 0 && setOpen(true)}
+          placeholder={placeholder || 'Caută adresă...'}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck="false"
+        />
+        {loading && <div className="input-spinner" />}
+      </div>
+      {open && candidates.length > 0 && (
+        <ul className="candidates">
+          {candidates.map((c, i) => (
+            <li key={i} onMouseDown={() => handleSelect(c)} onTouchStart={() => handleSelect(c)}>
+              {c.display}
+            </li>
+          ))}
+        </ul>
+      )}
+      {display && (
+        <div className="selected-addr">
+          <span>📍</span>
+          <span>{display}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- Toggle Component ----
+function Toggle({ checked, onChange, label }) {
+  return (
+    <label className="toggle-row">
+      <div className="toggle">
+        <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
+        <div className="toggle-track" />
+        <div className="toggle-thumb" />
+      </div>
+      <span className="toggle-label">{label}</span>
+    </label>
+  );
+}
+
+// ---- Stepper Component ----
+function Stepper({ value, onChange, min = 1, max = 50 }) {
+  return (
+    <div className="stepper">
+      <button className="stepper-btn" onClick={() => onChange(Math.max(min, value - 1))}>−</button>
+      <div className="stepper-val">{value}</div>
+      <button className="stepper-btn" onClick={() => onChange(Math.min(max, value + 1))}>+</button>
+    </div>
+  );
+}
+
+// ---- RouteView ----
+function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop, setCloseLoop, onCalculate, calculating }) {
+  const newStop = () => ({ id: uid(), text: '', lat: null, lon: null, display: '' });
+
+  const updateStop = (id, patch) =>
+    setStops(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
+
+  const removeStop = (id) => setStops(prev => prev.filter(s => s.id !== id));
+
+  const moveStop = (id, dir) => {
+    setStops(prev => {
+      const idx = prev.findIndex(s => s.id === id);
+      const next = idx + dir;
+      if (next < 0 || next >= prev.length) return prev;
+      const arr = [...prev];
+      [arr[idx], arr[next]] = [arr[next], arr[idx]];
+      return arr;
+    });
+  };
+
+  return (
+    <div className="view">
+      {/* Data */}
+      <div className="card">
+        <div className="card-title">Data foii de parcurs</div>
+        <div className="field">
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+        </div>
+      </div>
+
+      {/* Plecare */}
+      <div className="card">
+        <div className="card-title">📍 Punct de plecare</div>
+        <AddressInput
+          value={start.text}
+          display={start.display}
+          onTextChange={v => setStart(p => ({ ...p, text: v, lat: null, lon: null, display: '' }))}
+          onSelect={c => setStart({ text: c.display, lat: c.lat, lon: c.lon, display: c.display })}
+          placeholder="Caută adresa de plecare..."
+        />
+      </div>
+
+      {/* Opriri */}
+      <div className="card">
+        <div className="card-title">🛑 Opriri ({stops.length})</div>
+        {stops.map((s, i) => (
+          <div key={s.id} className="stop-item">
+            <div className="stop-header">
+              <span className="stop-label">Oprire {i + 1}</span>
+              <div className="stop-actions">
+                <button className="btn-icon" disabled={i === 0} onClick={() => moveStop(s.id, -1)} title="Sus">↑</button>
+                <button className="btn-icon" disabled={i === stops.length - 1} onClick={() => moveStop(s.id, 1)} title="Jos">↓</button>
+                <button className="btn-icon danger" onClick={() => removeStop(s.id)} title="Șterge">✕</button>
+              </div>
+            </div>
+            <AddressInput
+              value={s.text}
+              display={s.display}
+              onTextChange={v => updateStop(s.id, { text: v, lat: null, lon: null, display: '' })}
+              onSelect={c => updateStop(s.id, { text: c.display, lat: c.lat, lon: c.lon, display: c.display })}
+              placeholder="Caută adresa opririi..."
+            />
+          </div>
+        ))}
+        <button className="btn btn-outline btn-sm" style={{ marginTop: 4 }} onClick={() => setStops(p => [...p, newStop()])}>
+          + Adaugă oprire
+        </button>
+      </div>
+
+      {/* Opțiuni */}
+      <div className="card">
+        <div className="card-title">⚙️ Opțiuni</div>
+        <Toggle checked={closeLoop} onChange={setCloseLoop} label="Revenire la punctul de plecare" />
+      </div>
+
+      {/* Calculează */}
+      <div style={{ marginBottom: 14 }}>
+        <button className="btn btn-primary" onClick={onCalculate} disabled={calculating}>
+          {calculating ? '⏳ Se calculează...' : '🗺️ Calculează traseul'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---- SegmentsView ----
+function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
+  if (!segments.length) {
+    return (
+      <div className="view">
+        <div className="empty-state">
+          <div className="empty-icon">🗺️</div>
+          <div className="empty-title">Niciun traseu calculat</div>
+          <div className="empty-sub">Mergi la tab-ul Traseu și apasă Calculează.</div>
+          <div style={{ marginTop: 20 }}>
+            <button className="btn btn-outline" style={{ width: 'auto', padding: '0 24px' }} onClick={onGoRoute}>
+              Mergi la Traseu →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const updateOpt = (i, patch) =>
+    setSegOpts(prev => prev.map((o, j) => j === i ? { ...o, ...patch } : o));
+
+  const total = segments.reduce((sum, seg, i) => {
+    const opt = segOpts[i] || { roundTrip: false, reps: 1 };
+    return sum + kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
+  }, 0);
+
+  return (
+    <div className="view">
+      <div className="total-bar">
+        <span className="total-label">Total distanță</span>
+        <div>
+          <span className="total-value">{kmRound(total).toFixed(1)}</span>
+          <span className="total-unit">km</span>
+        </div>
+      </div>
+
+      {segments.map((seg, i) => {
+        const opt = segOpts[i] || { roundTrip: false, reps: 1 };
+        const km = kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
+        return (
+          <div key={i} className="seg-card">
+            <div className="seg-route">
+              <div className="seg-dots">
+                <div className="dot dot-start" />
+                <div className="dot-line" />
+                <div className="dot dot-end" />
+              </div>
+              <div className="seg-addrs">
+                <div className="seg-from">{seg.from}</div>
+                <div className="seg-to">{seg.to}</div>
+              </div>
+            </div>
+            <div className="divider" style={{ margin: '8px 0' }} />
+            <div className="seg-controls">
+              <div>
+                <div className="seg-km">{km.toFixed(1)} km</div>
+                <div className="seg-km-sub">
+                  {seg.km_oneway} km/sens × {opt.reps} {opt.roundTrip ? '× 2 (dus-întors)' : ''}
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+                <Toggle checked={opt.roundTrip} onChange={v => updateOpt(i, { roundTrip: v })} label="Dus-întors" />
+                <div className="row" style={{ gap: 6 }}>
+                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>Înmulțiri:</span>
+                  <Stepper value={opt.reps} onChange={v => updateOpt(i, { reps: v })} />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---- ExportView ----
+function ExportView({ segments, segOpts, date, start, stops, setStart, setStops, setSegments, setSegOpts, setDate, setTab }) {
+  const [favName, setFavName] = useState('');
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('fp_favorites') || '{}'); } catch { return {}; }
+  });
+  const [exporting, setExporting] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  const saveFavs = (obj) => {
+    setFavorites(obj);
+    localStorage.setItem('fp_favorites', JSON.stringify(obj));
+  };
+
+  const total = segments.reduce((sum, seg, i) => {
+    const opt = segOpts[i] || { roundTrip: false, reps: 1 };
+    return sum + kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
+  }, 0);
+
+  const dateStr = date.replace(/-/g, '');
+
+  const buildRows = () => segments.map((seg, i) => {
+    const opt = segOpts[i] || { roundTrip: false, reps: 1 };
+    const km = kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
+    return {
+      'Data': fmtDate(date),
+      'Plecare': seg.from,
+      'Destinație': seg.to,
+      'Dus-întors': opt.roundTrip ? 'Da' : 'Nu',
+      'Înmulțiri (×)': opt.reps,
+      'Km parcurși': km,
+    };
+  });
+
+  const handleCSV = () => {
+    if (!segments.length) return;
+    exportCSV(buildRows(), dateStr);
+    setMsg('CSV descărcat!');
+    setTimeout(() => setMsg(''), 3000);
+  };
+
+  const handleExcel = async () => {
+    if (!segments.length) return;
+    setExporting(true);
+    try {
+      await apiExportExcel(buildRows(), total, dateStr);
+      setMsg('Excel descărcat!');
+      setTimeout(() => setMsg(''), 3000);
+    } catch (e) {
+      setMsg('Eroare: ' + e.message);
+    }
+    setExporting(false);
+  };
+
+  const handleSaveFav = () => {
+    const name = favName.trim() || `traseu-${new Date().toISOString().slice(0,16).replace('T','-').replace(':','')}`;
+    const payload = {
+      start: { text: start.text, display: start.display },
+      stops: stops.map(s => ({ text: s.text, display: s.display })),
+    };
+    saveFavs({ ...favorites, [name]: payload });
+    setFavName('');
+    setMsg(`Favorit "${name}" salvat.`);
+    setTimeout(() => setMsg(''), 3000);
+  };
+
+  const handleLoadFav = (name) => {
+    const p = favorites[name];
+    if (!p) return;
+    setStart({ text: p.start.display || p.start.text, lat: null, lon: null, display: p.start.display || p.start.text });
+    setStops((p.stops || []).map(s => ({ id: uid(), text: s.display || s.text, lat: null, lon: null, display: s.display || s.text })));
+    setSegments([]);
+    setSegOpts([]);
+    setTab('route');
+  };
+
+  const handleDeleteFav = (name) => {
+    const copy = { ...favorites };
+    delete copy[name];
+    saveFavs(copy);
+  };
+
+  const handleExportFavs = () => {
+    const blob = new Blob([JSON.stringify(favorites, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'favorite_trasee.json'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFavs = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const obj = JSON.parse(ev.target.result);
+        if (typeof obj === 'object') { saveFavs({ ...favorites, ...obj }); setMsg('Favorite importate!'); setTimeout(() => setMsg(''), 3000); }
+      } catch { setMsg('Fișier invalid.'); setTimeout(() => setMsg(''), 3000); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  if (!segments.length) {
+    return (
+      <div className="view">
+        <div className="empty-state">
+          <div className="empty-icon">📥</div>
+          <div className="empty-title">Nimic de exportat</div>
+          <div className="empty-sub">Calculează mai întâi un traseu.</div>
+          <div style={{ marginTop: 20 }}>
+            <button className="btn btn-outline" style={{ width: 'auto', padding: '0 24px' }} onClick={() => setTab('route')}>
+              Mergi la Traseu →
+            </button>
+          </div>
+        </div>
+        {Object.keys(favorites).length > 0 && (
+          <div className="card" style={{ marginTop: 0 }}>
+            <div className="card-title">⭐ Favorite salvate</div>
+            {Object.keys(favorites).map(name => (
+              <div key={name} className="fav-item">
+                <div>
+                  <div className="fav-name">{name}</div>
+                  <div className="fav-stops">{favorites[name].start?.display || '—'}</div>
+                </div>
+                <button className="btn btn-outline btn-sm" style={{ width: 'auto' }} onClick={() => handleLoadFav(name)}>Încarcă</button>
+                <button className="btn-icon danger" onClick={() => handleDeleteFav(name)}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="view">
+      {msg && <div className={`alert ${msg.startsWith('Eroare') ? 'alert-error' : 'alert-success'}`}>{msg}</div>}
+
+      <div className="total-bar">
+        <span className="total-label">Total km calculați</span>
+        <div>
+          <span className="total-value">{kmRound(total).toFixed(1)}</span>
+          <span className="total-unit">km</span>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">📥 Descarcă foaia</div>
+        <div className="export-grid">
+          <button className="btn btn-outline" onClick={handleCSV}>
+            📄 CSV
+          </button>
+          <button className="btn btn-outline" onClick={handleExcel} disabled={exporting}>
+            {exporting ? '⏳...' : '📊 Excel'}
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">⭐ Favorite</div>
+        <div className="field">
+          <label>Nume traseu</label>
+          <input type="text" value={favName} onChange={e => setFavName(e.target.value)} placeholder="ex: Birou - Depozit" />
+        </div>
+        <button className="btn btn-outline btn-sm" onClick={handleSaveFav} style={{ marginBottom: 12 }}>
+          Salvează traseul curent
+        </button>
+
+        {Object.keys(favorites).length > 0 && (
+          <>
+            <div className="divider" />
+            {Object.keys(favorites).map(name => (
+              <div key={name} className="fav-item">
+                <div style={{ flex: 1 }}>
+                  <div className="fav-name">{name}</div>
+                  <div className="fav-stops">{favorites[name].start?.display?.slice(0, 40) || '—'}</div>
+                </div>
+                <button className="btn btn-outline btn-sm" style={{ width: 'auto' }} onClick={() => handleLoadFav(name)}>Încarcă</button>
+                <button className="btn-icon danger" onClick={() => handleDeleteFav(name)}>✕</button>
+              </div>
+            ))}
+            <div className="divider" />
+            <div className="export-grid" style={{ marginTop: 4 }}>
+              <button className="btn btn-outline btn-sm" onClick={handleExportFavs}>⬇ Export JSON</button>
+              <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                ⬆ Import JSON
+                <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportFavs} />
+              </label>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---- App ----
+function App() {
+  const [tab, setTab] = useState('route');
+  const [date, setDate] = useState(today);
+  const [start, setStart] = useState({ text: '', lat: null, lon: null, display: '' });
+  const [stops, setStops] = useState([{ id: uid(), text: '', lat: null, lon: null, display: '' }]);
+  const [closeLoop, setCloseLoop] = useState(false);
+  const [segments, setSegments] = useState([]);
+  const [segOpts, setSegOpts] = useState([]);
+  const [calculating, setCalculating] = useState(false);
+  const [error, setError] = useState('');
+
+  // Geocodare adresă dacă nu are lat/lon
+  const resolveAddr = async (addr) => {
+    if (addr.lat && addr.lon) return addr;
+    if (!addr.text || addr.text.length < 3) return null;
+    const results = await apiGeocode(addr.text);
+    if (!results.length) return null;
+    return { ...addr, lat: results[0].lat, lon: results[0].lon, display: results[0].display };
+  };
+
+  const handleCalculate = async () => {
+    setError('');
+    setCalculating(true);
+
+    try {
+      const resolvedStart = await resolveAddr(start);
+      if (!resolvedStart) { setError('Punctul de plecare nu a putut fi geocodat. Selectează o adresă din lista de sugestii.'); setCalculating(false); return; }
+
+      const resolvedStops = [];
+      for (const s of stops) {
+        const r = await resolveAddr(s);
+        if (!r) { setError(`Oprirea "${s.text || '(goală)'}" nu a putut fi geocodată.`); setCalculating(false); return; }
+        resolvedStops.push(r);
+      }
+
+      // Actualizăm state cu adresele rezolvate
+      setStart(resolvedStart);
+      setStops(resolvedStops);
+
+      const pts = [resolvedStart, ...resolvedStops];
+      if (closeLoop) pts.push(resolvedStart);
+
+      const data = await apiRoute(pts.map(p => [p.lat, p.lon]));
+
+      const segs = data.legs_km.map((km, i) => ({
+        from: pts[i].display,
+        to: pts[i + 1].display,
+        km_oneway: km,
+      }));
+
+      setSegments(segs);
+      setSegOpts(segs.map(() => ({ roundTrip: false, reps: 1 })));
+      setTab('segments');
+    } catch (e) {
+      setError(e.message || 'Eroare neașteptată.');
+    }
+
+    setCalculating(false);
+  };
+
+  return (
+    <>
+      <div className="header">
+        <span className="header-icon">🚗</span>
+        <h1>Foaie de parcurs</h1>
+        {segments.length > 0 && (
+          <span className="header-badge">Calculat</span>
+        )}
+      </div>
+
+      {calculating && (
+        <div className="loader-overlay">
+          <div className="loader-big" />
+          <div className="loader-text">Se calculează traseul...</div>
+        </div>
+      )}
+
+      <div className="main">
+        {error && (
+          <div style={{ padding: '14px 14px 0', maxWidth: 640, margin: '0 auto' }}>
+            <div className="alert alert-error">{error}</div>
+          </div>
+        )}
+
+        {tab === 'route' && (
+          <RouteView
+            date={date} setDate={setDate}
+            start={start} setStart={setStart}
+            stops={stops} setStops={setStops}
+            closeLoop={closeLoop} setCloseLoop={setCloseLoop}
+            onCalculate={handleCalculate}
+            calculating={calculating}
+          />
+        )}
+        {tab === 'segments' && (
+          <SegmentsView
+            segments={segments}
+            segOpts={segOpts}
+            setSegOpts={setSegOpts}
+            onGoRoute={() => setTab('route')}
+          />
+        )}
+        {tab === 'export' && (
+          <ExportView
+            segments={segments}
+            segOpts={segOpts}
+            date={date}
+            start={start}
+            stops={stops}
+            setStart={setStart}
+            setStops={setStops}
+            setSegments={setSegments}
+            setSegOpts={setSegOpts}
+            setDate={setDate}
+            setTab={setTab}
+          />
+        )}
+      </div>
+
+      <nav className="bottom-nav">
+        <button className={`nav-tab ${tab === 'route' ? 'active' : ''}`} onClick={() => setTab('route')}>
+          <span className="nav-icon">🗺️</span>
+          <span className="nav-label">Traseu</span>
+          {tab === 'route' && <div className="nav-dot" />}
+        </button>
+        <button className={`nav-tab ${tab === 'segments' ? 'active' : ''}`} onClick={() => setTab('segments')}>
+          <span className="nav-icon">📋</span>
+          <span className="nav-label">Segmente</span>
+          {tab === 'segments' && <div className="nav-dot" />}
+        </button>
+        <button className={`nav-tab ${tab === 'export' ? 'active' : ''}`} onClick={() => setTab('export')}>
+          <span className="nav-icon">📥</span>
+          <span className="nav-label">Export</span>
+          {tab === 'export' && <div className="nav-dot" />}
+        </button>
+      </nav>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
