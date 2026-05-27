@@ -366,9 +366,17 @@ function loadHistory(){try{return JSON.parse(localStorage.getItem('fp_history')|
 function saveHistory(h){localStorage.setItem('fp_history',JSON.stringify(h))}
 
 // ── API ───────────────────────────────────────────────────────────────────────
-async function apiGeocode(q){const r=await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);if(!r.ok)throw new Error('Geocoding error');return(await r.json()).results||[]}
+function _parseErr(d,fallback){
+  if(!d)return fallback;
+  if(typeof d.detail==='string')return d.detail;
+  if(Array.isArray(d.detail))return d.detail.map(e=>e.msg||JSON.stringify(e)).join('; ');
+  if(typeof d.error==='string')return d.error;
+  if(typeof d.message==='string')return d.message;
+  return fallback;
+}
+async function apiGeocode(q){const r=await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(_parseErr(d,'Geocoding error'))}return(await r.json()).results||[]}
 async function apiReverse(lat,lon){const r=await fetch(`/api/reverse?lat=${lat}&lon=${lon}`);if(!r.ok)return null;return r.json()}
-async function apiRoute(points){const r=await fetch('/api/route',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({points})});if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||'Routing error')}return r.json()}
+async function apiRoute(points){const r=await fetch('/api/route',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({points})});if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(_parseErr(d,'Routing error'))}return r.json()}
 async function apiExportExcel(rows,total,dateStr,colTotal){const r=await fetch('/api/export/excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows,total,date_str:dateStr,total_col_label:colTotal})});if(!r.ok)throw new Error('Export error');const blob=await r.blob();_downloadBlob(blob,`foaie_parcurs_${dateStr}.xlsx`)}
 async function apiExportPDF(rows,total,dateStr,title,vehicle,driver,colTotal){const r=await fetch('/api/export/pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows,total,date_str:dateStr,title,vehicle,driver,total_col_label:colTotal})});if(!r.ok)throw new Error('PDF error');const blob=await r.blob();_downloadBlob(blob,`foaie_parcurs_${dateStr}.pdf`)}
 function _downloadBlob(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
@@ -1077,7 +1085,7 @@ function App(){
       setSegOpts(segs.map(()=>({roundTrip:false,reps:1,purpose:''})));
       setCoords(data.coords||[]);
       setTab('segments');
-    }catch(e){setError(e.message||t.errUnexpected)}
+    }catch(e){setError(typeof e==='string'?e:(e?.message?String(e.message):t.errUnexpected))}
     setCalculating(false);
   };
 

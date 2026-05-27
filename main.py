@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse, StreamingResponse, Response as FastA
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from pydantic import BaseModel
 import pandas as pd
 
@@ -21,7 +22,7 @@ USER_AGENT      = f"TripLogApp/9.0 (contact:{CONTACT_EMAIL or 'none'})"
 DB_PATH         = os.getenv("CACHE_DB", "cache.db")
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",")]
 
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
 
 @asynccontextmanager
@@ -36,6 +37,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="TripLog", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -100,9 +102,7 @@ async def _try_mapsco(client: httpx.AsyncClient, q: str, limit: int) -> Optional
 
 
 @app.get("/api/geocode")
-@limiter.limit("30/minute")
-async def geocode(request: Request,
-                  q: str = Query(..., min_length=3),
+async def geocode(q: str = Query(..., min_length=3),
                   limit: int = Query(6, ge=1, le=10)):
     key = f"{q}|{limit}"
     async with aiosqlite.connect(DB_PATH) as db:
@@ -124,9 +124,7 @@ async def geocode(request: Request,
 
 
 @app.get("/api/reverse")
-@limiter.limit("20/minute")
-async def reverse_geocode(request: Request,
-                          lat: float = Query(...),
+async def reverse_geocode(lat: float = Query(...),
                           lon: float = Query(...)):
     try:
         async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, timeout=10.0) as client:
@@ -149,8 +147,7 @@ class RouteRequest(BaseModel):
 
 
 @app.post("/api/route")
-@limiter.limit("20/minute")
-async def route(request: Request, body: RouteRequest):
+async def route(body: RouteRequest):
     if len(body.points) < 2:
         raise HTTPException(400, "Minim 2 puncte necesare.")
     key = "|".join(f"{la:.5f},{lo:.5f}" for la, lo in body.points)
