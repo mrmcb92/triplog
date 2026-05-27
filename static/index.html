@@ -1137,8 +1137,7 @@ function App(){
           </div>
         </div>
         <div className="header-actions">
-          {segments.length>0&&<span className="badge"><span className="badge-dot"/>Calculat</span>}
-          <button className="theme-toggle" onClick={handleReset} title={t.btnNewRoute} style={{color:'var(--accent)'}}><Icon name="newRoute" size={17}/></button>
+          <button className="theme-toggle" onClick={handleReset} title={t.btnNewRoute} style={{color:segments.length>0?'var(--accent)':'var(--text-3)'}}><Icon name="newRoute" size={17}/></button>
           <button className="theme-toggle" onClick={()=>setShowVehicleModal(true)} title={t.vehiclesTitle}><Icon name="settings" size={17}/></button>
           <button className="theme-toggle" onClick={toggleLang} style={{fontSize:12,fontWeight:700,width:'auto',padding:'0 10px',minWidth:38}}>{lang==='en'?'RO':'EN'}</button>
           <button className="theme-toggle" onClick={()=>setTheme(th=>th==='dark'?'light':'dark')} title={theme==='dark'?t.themeLight:t.themeDark}><Icon name={theme==='dark'?'sun':'moon'} size={17}/></button>
