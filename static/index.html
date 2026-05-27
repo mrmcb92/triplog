@@ -8,1345 +8,1103 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Parcurs" />
-  <meta name="application-name" content="Foaie de parcurs" />
+  <meta name="apple-mobile-web-app-title" content="TripLog" />
+  <meta name="application-name" content="TripLog" />
   <title>TripLog</title>
   <link rel="manifest" href="/static/manifest.json" />
   <link rel="apple-touch-icon" href="/static/icon-192.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     :root[data-theme="light"] {
-      --accent: #6366F1;
-      --accent-2: #8B5CF6;
-      --accent-soft: #EEF2FF;
-      --accent-border: #C7D2FE;
-      --accent-text: #4338CA;
-      --bg: #FAFAFC;
-      --bg-grad-1: #EEF2FF;
-      --bg-grad-2: #F5F3FF;
-      --surface: rgba(255, 255, 255, 0.7);
-      --surface-solid: #FFFFFF;
-      --surface-hover: rgba(255, 255, 255, 0.9);
-      --surface-2: #F8FAFC;
-      --text: #0F172A;
-      --text-2: #475569;
-      --text-3: #94A3B8;
-      --border: rgba(15, 23, 42, 0.08);
-      --border-2: rgba(15, 23, 42, 0.15);
-      --danger: #DC2626;
-      --danger-soft: #FEF2F2;
-      --success: #059669;
-      --success-soft: #ECFDF5;
-      --warning: #D97706;
-      --warning-soft: #FFFBEB;
-      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-      --shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
-      --shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.12);
+      --accent: #6366F1; --accent-2: #8B5CF6; --accent-soft: #EEF2FF;
+      --accent-border: #C7D2FE; --accent-text: #4338CA;
+      --bg: #FAFAFC; --bg-grad-1: #EEF2FF; --bg-grad-2: #F5F3FF;
+      --surface: rgba(255,255,255,0.7); --surface-solid: #FFFFFF;
+      --surface-hover: rgba(255,255,255,0.9); --surface-2: #F8FAFC;
+      --text: #0F172A; --text-2: #475569; --text-3: #94A3B8;
+      --border: rgba(15,23,42,0.08); --border-2: rgba(15,23,42,0.15);
+      --danger: #DC2626; --danger-soft: #FEF2F2;
+      --success: #059669; --success-soft: #ECFDF5;
+      --warning: #D97706; --warning-soft: #FFFBEB;
+      --shadow-sm: 0 1px 2px rgba(15,23,42,0.04);
+      --shadow: 0 4px 16px rgba(15,23,42,0.06);
+      --shadow-lg: 0 8px 32px rgba(99,102,241,0.12);
       --glass-blur: 12px;
     }
-
     :root[data-theme="dark"] {
-      --accent: #818CF8;
-      --accent-2: #A78BFA;
-      --accent-soft: rgba(129, 140, 248, 0.12);
-      --accent-border: rgba(129, 140, 248, 0.3);
-      --accent-text: #C7D2FE;
-      --bg: #0A0A14;
-      --bg-grad-1: #14142B;
-      --bg-grad-2: #1A1033;
-      --surface: rgba(30, 30, 50, 0.5);
-      --surface-solid: #1A1A2E;
-      --surface-hover: rgba(40, 40, 65, 0.7);
-      --surface-2: rgba(30, 30, 50, 0.4);
-      --text: #F1F5F9;
-      --text-2: #94A3B8;
-      --text-3: #64748B;
-      --border: rgba(255, 255, 255, 0.08);
-      --border-2: rgba(255, 255, 255, 0.15);
-      --danger: #F87171;
-      --danger-soft: rgba(248, 113, 113, 0.1);
-      --success: #34D399;
-      --success-soft: rgba(52, 211, 153, 0.1);
-      --warning: #FBBF24;
-      --warning-soft: rgba(251, 191, 36, 0.1);
-      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-      --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-      --shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.25);
+      --accent: #818CF8; --accent-2: #A78BFA; --accent-soft: rgba(129,140,248,0.12);
+      --accent-border: rgba(129,140,248,0.3); --accent-text: #C7D2FE;
+      --bg: #0A0A14; --bg-grad-1: #14142B; --bg-grad-2: #1A1033;
+      --surface: rgba(30,30,50,0.5); --surface-solid: #1A1A2E;
+      --surface-hover: rgba(40,40,65,0.7); --surface-2: rgba(30,30,50,0.4);
+      --text: #F1F5F9; --text-2: #94A3B8; --text-3: #64748B;
+      --border: rgba(255,255,255,0.08); --border-2: rgba(255,255,255,0.15);
+      --danger: #F87171; --danger-soft: rgba(248,113,113,0.1);
+      --success: #34D399; --success-soft: rgba(52,211,153,0.1);
+      --warning: #FBBF24; --warning-soft: rgba(251,191,36,0.1);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow: 0 4px 16px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 32px rgba(99,102,241,0.25);
       --glass-blur: 16px;
     }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-      min-height: 100dvh;
-      -webkit-tap-highlight-color: transparent;
-      overscroll-behavior: none;
-      letter-spacing: -0.01em;
-      transition: background 0.4s, color 0.3s;
-      position: relative;
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(circle at 20% 0%, var(--bg-grad-1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 100%, var(--bg-grad-2) 0%, transparent 50%),
-        var(--bg);
-      z-index: -1;
-      transition: opacity 0.4s;
-    }
-
-    #root { display: flex; flex-direction: column; min-height: 100dvh; }
-
-    .header {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      height: 64px;
-      background: var(--surface);
-      backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; padding: 0 20px;
-      gap: 12px;
-    }
-
-    .logo-wrap { display: flex; align-items: center; gap: 10px; }
-    .logo-icon {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      color: white;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
-    }
-    .logo-title { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
-    .logo-sub { font-size: 11px; color: var(--text-3); font-weight: 500; margin-top: -2px; }
-
-    .header-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-    .theme-toggle {
-      width: 38px; height: 38px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s;
-      color: var(--text);
-    }
-    .theme-toggle:hover { background: var(--surface-hover); transform: translateY(-1px); }
-    .theme-toggle:active { transform: scale(0.95); }
-
-    .main {
-      flex: 1;
-      padding-top: 64px;
-      padding-bottom: 90px;
-      overflow-y: auto;
-    }
-    .view { padding: 18px 16px 0; max-width: 680px; margin: 0 auto; }
-
-    .card {
-      background: var(--surface-solid);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 18px;
-      margin-bottom: 14px;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.2s;
-      position: relative;
-    }
-    .card.has-dropdown { z-index: 100; }
-    /* Cardul care conține un dropdown deschis trece deasupra celorlalte */
-    .card:has(.candidates) { z-index: 100; }
-    .stop-item:has(.candidates) { z-index: 50; position: relative; }
-
-    .card-title {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 11px; font-weight: 700; color: var(--text-2);
-      text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 14px;
-    }
-    .card-title-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    }
-
-    .field { margin-bottom: 12px; position: relative; }
-    .field:last-child { margin-bottom: 0; }
-    .field label {
-      display: block;
-      font-size: 12px; font-weight: 600; color: var(--text-2);
-      margin-bottom: 6px;
-    }
-
-    input[type="text"], input[type="date"] {
-      width: 100%; height: 50px;
-      padding: 0 16px;
-      border: 1.5px solid var(--border-2);
-      border-radius: 12px;
-      font-size: 15px; color: var(--text);
-      font-family: inherit; font-weight: 500;
-      background: var(--surface-2);
-      outline: none;
-      transition: all 0.2s;
-      appearance: none; -webkit-appearance: none;
-    }
-
-    [data-theme="dark"] input[type="date"] { color-scheme: dark; }
-
-    input[type="text"]:focus, input[type="date"]:focus {
-      border-color: var(--accent);
-      background: var(--surface-solid);
-      box-shadow: 0 0 0 4px var(--accent-soft);
-    }
-    input[type="text"]::placeholder { color: var(--text-3); font-weight: 400; }
-    input[type="date"] { cursor: pointer; }
-
-    .input-wrap { position: relative; }
-    .input-spinner {
-      position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-      width: 18px; height: 18px;
-      border: 2.5px solid var(--border-2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
-
-    .candidates {
-      position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 1000;
-      background: var(--surface-solid);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1.5px solid var(--accent-border);
-      border-radius: 14px;
-      box-shadow: var(--shadow-lg);
-      max-height: 240px; overflow-y: auto;
-      list-style: none;
-      padding: 6px;
-    }
-    .candidates li {
-      padding: 11px 12px;
-      font-size: 13.5px; color: var(--text);
-      cursor: pointer;
-      border-radius: 9px;
-      line-height: 1.4;
-      transition: all 0.12s;
-      font-weight: 500;
-    }
-    .candidates li:active, .candidates li:hover {
-      background: var(--accent-soft);
-      color: var(--accent-text);
-    }
-
-    .selected-addr {
-      margin-top: 6px;
-      padding: 9px 12px;
-      background: var(--accent-soft);
-      border: 1px solid var(--accent-border);
-      border-radius: 10px;
-      font-size: 12.5px; color: var(--accent-text);
-      display: flex; align-items: flex-start; gap: 7px;
-      font-weight: 500;
-    }
-
-    .stop-item {
-      background: var(--surface-2);
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      padding: 14px;
-      margin-bottom: 10px;
-      transition: all 0.2s;
-    }
-    .stop-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .stop-label {
-      font-size: 13px; font-weight: 700; color: var(--text-2);
-      display: flex; align-items: center; gap: 7px;
-    }
-    .stop-num {
-      width: 22px; height: 22px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: white;
-      border-radius: 7px;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700;
-    }
-    .stop-actions { display: flex; gap: 5px; }
-
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      height: 50px; padding: 0 20px;
-      border-radius: 12px; border: none; cursor: pointer;
-      font-size: 15px; font-weight: 600; font-family: inherit;
-      transition: all 0.2s; user-select: none;
-      letter-spacing: -0.01em;
-    }
-    .btn:active { transform: scale(0.97); }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: white; width: 100%;
-      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-    }
-    .btn-primary:hover {
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
-      transform: translateY(-1px);
-    }
-    .btn-primary:disabled {
-      background: var(--text-3); cursor: not-allowed; transform: none;
-      box-shadow: none; opacity: 0.6;
-    }
-
-    .btn-outline {
-      background: var(--surface-2); color: var(--accent-text);
-      border: 1.5px solid var(--accent-border);
-      width: 100%;
-    }
-    .btn-outline:hover {
-      background: var(--accent-soft);
-      transform: translateY(-1px);
-    }
-
-    .btn-icon {
-      width: 36px; height: 36px; padding: 0;
-      border-radius: 10px; border: 1px solid var(--border-2);
-      background: var(--surface-2); color: var(--text-2);
-      cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center;
-      transition: all 0.2s;
-    }
-    .btn-icon:hover { background: var(--surface-hover); color: var(--text); }
-    .btn-icon:active { transform: scale(0.92); }
-    .btn-icon:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
-    .btn-icon.danger:hover {
-      background: var(--danger-soft);
-      color: var(--danger);
-      border-color: var(--danger);
-    }
-
-    .btn-sm { height: 42px; padding: 0 16px; font-size: 14px; }
-
-    .toggle-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 4px 0; cursor: pointer; user-select: none;
-    }
-    .toggle { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .toggle-track {
-      position: absolute; inset: 0;
-      background: var(--border-2);
-      border-radius: 13px;
-      transition: all 0.25s;
-    }
-    .toggle input:checked + .toggle-track {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    }
-    .toggle-thumb {
-      position: absolute; top: 3px; left: 3px;
-      width: 20px; height: 20px;
-      background: white; border-radius: 50%;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
-    .toggle-label { font-size: 14.5px; color: var(--text); font-weight: 500; }
-
-    .stepper {
-      display: flex; align-items: center;
-      border: 1.5px solid var(--border-2);
-      border-radius: 10px; overflow: hidden;
-      background: var(--surface-2);
-    }
-    .stepper-btn {
-      width: 36px; height: 36px; border: none; background: transparent;
-      color: var(--text); font-size: 17px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s; font-weight: 600;
-    }
-    .stepper-btn:active { background: var(--accent-soft); }
-    .stepper-val {
-      min-width: 38px; text-align: center; font-size: 14px; font-weight: 700;
-      color: var(--text); padding: 0 4px;
-    }
-
-    .seg-card {
-      background: var(--surface-solid);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 18px;
-      margin-bottom: 12px;
-      box-shadow: var(--shadow-sm);
-    }
-    .seg-route { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
-    .seg-dots {
-      display: flex; flex-direction: column; align-items: center;
-      padding-top: 5px; gap: 4px;
-    }
-    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .dot-start { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-    .dot-end { background: var(--accent-2); box-shadow: 0 0 0 3px var(--accent-soft); }
-    .dot-line {
-      width: 2px; height: 22px;
-      background: linear-gradient(var(--accent), var(--accent-2));
-      opacity: 0.4;
-    }
-    .seg-addrs { flex: 1; min-width: 0; }
-    .seg-from { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.35; word-wrap: break-word; }
-    .seg-to { font-size: 14px; color: var(--text-2); line-height: 1.35; margin-top: 14px; word-wrap: break-word; }
-    .seg-divider { height: 1px; background: var(--border); margin: 12px 0 14px; }
-    .seg-controls {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px; flex-wrap: wrap;
-    }
-    .seg-km {
-      font-size: 22px; font-weight: 700;
-      letter-spacing: -0.02em;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .seg-km-sub { font-size: 11.5px; color: var(--text-3); margin-top: 2px; font-weight: 500; }
-    .seg-opts { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
-    .seg-opts-row { display: flex; align-items: center; gap: 8px; }
-    .seg-opts-row span { font-size: 12.5px; color: var(--text-2); font-weight: 500; }
-
-    .total-hero {
-      position: relative;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      border-radius: 20px;
-      padding: 22px 24px;
-      margin-bottom: 14px;
-      color: white;
-      overflow: hidden;
-      box-shadow: 0 12px 32px rgba(99, 102, 241, 0.35);
-    }
-    .total-hero::before {
-      content: '';
-      position: absolute;
-      top: -50%; right: -20%;
-      width: 200px; height: 200px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      filter: blur(40px);
-    }
-    .total-hero-content {
-      position: relative;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .total-label {
-      font-size: 12px; color: rgba(255, 255, 255, 0.85);
-      font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 4px;
-    }
-    .total-value {
-      font-size: 36px; font-weight: 700; color: white;
-      letter-spacing: -0.03em; line-height: 1;
-    }
-    .total-unit {
-      font-size: 18px; font-weight: 500; color: rgba(255, 255, 255, 0.85);
-      margin-left: 4px;
-    }
-    .total-hero-icon {
-      width: 52px; height: 52px;
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
-      border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .alert {
-      padding: 13px 16px; border-radius: 12px;
-      font-size: 13.5px; margin-bottom: 12px; line-height: 1.45;
-      font-weight: 500;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-    .alert-error { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger); }
-    .alert-success { background: var(--success-soft); color: var(--success); border: 1px solid var(--success); }
-
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      background: var(--surface);
-      backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-      border-top: 1px solid var(--border);
-      display: flex;
-      padding: 8px 12px;
-      padding-bottom: calc(8px + env(safe-area-inset-bottom));
-      gap: 4px;
-    }
-    .nav-tab {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 3px;
-      cursor: pointer; border: none; background: transparent;
-      padding: 10px 0; transition: all 0.2s;
-      color: var(--text-3);
-      border-radius: 12px;
-      font-family: inherit;
-    }
-    .nav-tab.active {
-      color: white;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
-    }
-    .nav-tab:not(.active):hover { color: var(--text); background: var(--surface-2); }
-    .nav-tab:active { transform: scale(0.95); }
-    .nav-icon { transition: transform 0.2s; display: flex; }
-    .nav-tab.active .nav-icon { transform: scale(1.05); }
-    .nav-label { font-size: 11px; font-weight: 600; letter-spacing: -0.01em; }
-
-    .fav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .fav-item:last-child { border-bottom: none; }
-    .fav-info { flex: 1; min-width: 0; }
-    .fav-name { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
-    .fav-stops {
-      font-size: 12px; color: var(--text-3); margin-top: 2px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .divider { height: 1px; background: var(--border); margin: 14px 0; }
-
-    .loader-overlay {
-      position: fixed; inset: 0; z-index: 500;
-      background: var(--surface);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 18px;
-    }
-    .loader-big {
-      width: 48px; height: 48px;
-      border: 3px solid var(--border-2);
-      border-top-color: var(--accent);
-      border-right-color: var(--accent-2);
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-    }
-    .loader-text { font-size: 15px; color: var(--text-2); font-weight: 600; }
-
-    .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    .empty-state { text-align: center; padding: 50px 20px; color: var(--text-2); }
-    .empty-icon {
-      width: 72px; height: 72px;
-      margin: 0 auto 16px;
-      background: var(--accent-soft);
-      color: var(--accent-text);
-      border-radius: 20px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .empty-title {
-      font-size: 17px; font-weight: 700; color: var(--text);
-      margin-bottom: 6px; letter-spacing: -0.02em;
-    }
-    .empty-sub {
-      font-size: 14px; color: var(--text-2); line-height: 1.5;
-      max-width: 280px; margin: 0 auto;
-    }
-
-    .btn-add-stop {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      width: 100%; height: 44px;
-      background: transparent;
-      border: 1.5px dashed var(--accent-border);
-      border-radius: 12px;
-      color: var(--accent-text);
-      font-size: 14px; font-weight: 600;
-      cursor: pointer; transition: all 0.2s;
-      font-family: inherit;
-      margin-top: 4px;
-    }
-    .btn-add-stop:hover { background: var(--accent-soft); border-style: solid; }
-
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 3px 9px;
-      background: var(--success-soft);
-      color: var(--success);
-      border-radius: 20px;
-      font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .badge-dot {
-      width: 5px; height: 5px; border-radius: 50%;
-      background: var(--success);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-    @media (min-width: 480px) {
-      .view { padding: 22px 20px 0; }
-    }
-    @media (min-width: 680px) {
-      .bottom-nav {
-        max-width: 680px;
-        left: 50%; transform: translateX(-50%);
-        border-radius: 20px 20px 0 0;
-      }
-    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100dvh;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;letter-spacing:-0.01em;transition:background 0.4s,color 0.3s;position:relative;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 0%,var(--bg-grad-1) 0%,transparent 50%),radial-gradient(circle at 80% 100%,var(--bg-grad-2) 0%,transparent 50%),var(--bg);z-index:-1}
+    #root{display:flex;flex-direction:column;min-height:100dvh}
+    .header{position:fixed;top:0;left:0;right:0;z-index:200;height:64px;background:var(--surface);backdrop-filter:blur(var(--glass-blur)) saturate(180%);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:10px}
+    .logo-wrap{display:flex;align-items:center;gap:10px}
+    .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 4px 12px rgba(99,102,241,0.35);flex-shrink:0}
+    .logo-title{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+    .logo-sub{font-size:11px;color:var(--text-3);font-weight:500;margin-top:-2px}
+    .header-actions{margin-left:auto;display:flex;gap:6px;align-items:center}
+    .theme-toggle{width:38px;height:38px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:var(--text);flex-shrink:0}
+    .theme-toggle:hover{background:var(--surface-hover);transform:translateY(-1px)}
+    .theme-toggle:active{transform:scale(0.95)}
+    .main{flex:1;padding-top:64px;padding-bottom:90px;overflow-y:auto}
+    .view{padding:18px 16px 0;max-width:680px;margin:0 auto}
+    .card{background:var(--surface-solid);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm);transition:all 0.2s;position:relative}
+    .card:has(.candidates){z-index:100}
+    .stop-item:has(.candidates){z-index:50;position:relative}
+    .card-title{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px}
+    .card-title-dot{width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));flex-shrink:0}
+    .field{margin-bottom:12px;position:relative}
+    .field:last-child{margin-bottom:0}
+    .field label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+    input[type="text"],input[type="date"],input[type="number"],select{width:100%;height:50px;padding:0 16px;border:1.5px solid var(--border-2);border-radius:12px;font-size:15px;color:var(--text);font-family:inherit;font-weight:500;background:var(--surface-2);outline:none;transition:all 0.2s;appearance:none;-webkit-appearance:none}
+    [data-theme="dark"] input[type="date"]{color-scheme:dark}
+    [data-theme="dark"] select{color-scheme:dark}
+    input[type="text"]:focus,input[type="date"]:focus,input[type="number"]:focus,select:focus{border-color:var(--accent);background:var(--surface-solid);box-shadow:0 0 0 4px var(--accent-soft)}
+    input[type="text"]::placeholder,input[type="number"]::placeholder{color:var(--text-3);font-weight:400}
+    input[type="date"]{cursor:pointer}
+    select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+    .input-wrap{position:relative}
+    .input-spinner{position:absolute;right:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;border:2.5px solid var(--border-2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite}
+    @keyframes spin{to{transform:translateY(-50%) rotate(360deg)}}
+    .candidates{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:1000;background:var(--surface-solid);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1.5px solid var(--accent-border);border-radius:14px;box-shadow:var(--shadow-lg);max-height:240px;overflow-y:auto;list-style:none;padding:6px}
+    .candidates li{padding:11px 12px;font-size:13.5px;color:var(--text);cursor:pointer;border-radius:9px;line-height:1.4;transition:all 0.12s;font-weight:500}
+    .candidates li:active,.candidates li:hover{background:var(--accent-soft);color:var(--accent-text)}
+    .selected-addr{margin-top:6px;padding:9px 12px;background:var(--accent-soft);border:1px solid var(--accent-border);border-radius:10px;font-size:12.5px;color:var(--accent-text);display:flex;align-items:flex-start;gap:7px;font-weight:500}
+    .stop-item{background:var(--surface-2);border-radius:14px;border:1px solid var(--border);padding:14px;margin-bottom:10px;transition:all 0.2s;position:relative}
+    .stop-item.drag-over{border-color:var(--accent);background:var(--accent-soft)}
+    .stop-item.dragging{opacity:0.5}
+    .stop-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .stop-label{font-size:13px;font-weight:700;color:var(--text-2);display:flex;align-items:center;gap:7px}
+    .stop-num{width:22px;height:22px;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:white;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+    .stop-actions{display:flex;gap:5px;align-items:center}
+    .drag-handle{cursor:grab;color:var(--text-3);display:flex;align-items:center;padding:4px;border-radius:6px;transition:color 0.15s}
+    .drag-handle:hover{color:var(--text-2)}
+    .drag-handle:active{cursor:grabbing}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;padding:0 20px;border-radius:12px;border:none;cursor:pointer;font-size:15px;font-weight:600;font-family:inherit;transition:all 0.2s;user-select:none;letter-spacing:-0.01em}
+    .btn:active{transform:scale(0.97)}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:white;width:100%;box-shadow:0 4px 14px rgba(99,102,241,0.35)}
+    .btn-primary:hover{box-shadow:0 6px 20px rgba(99,102,241,0.45);transform:translateY(-1px)}
+    .btn-primary:disabled{background:var(--text-3);cursor:not-allowed;transform:none;box-shadow:none;opacity:0.6}
+    .btn-outline{background:var(--surface-2);color:var(--accent-text);border:1.5px solid var(--accent-border);width:100%}
+    .btn-outline:hover{background:var(--accent-soft);transform:translateY(-1px)}
+    .btn-outline:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+    .btn-icon{width:36px;height:36px;padding:0;border-radius:10px;border:1px solid var(--border-2);background:var(--surface-2);color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all 0.2s}
+    .btn-icon:hover{background:var(--surface-hover);color:var(--text)}
+    .btn-icon:active{transform:scale(0.92)}
+    .btn-icon:disabled{opacity:0.3;cursor:not-allowed;transform:none}
+    .btn-icon.danger:hover{background:var(--danger-soft);color:var(--danger);border-color:var(--danger)}
+    .btn-sm{height:42px;padding:0 16px;font-size:14px}
+    .btn-geo{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--accent-border);background:var(--accent-soft);color:var(--accent-text);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;white-space:nowrap}
+    .btn-geo:hover{background:var(--accent);color:white}
+    .btn-geo:disabled{opacity:0.5;cursor:not-allowed}
+    .toggle-row{display:flex;align-items:center;gap:12px;padding:4px 0;cursor:pointer;user-select:none}
+    .toggle{position:relative;width:46px;height:26px;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0}
+    .toggle-track{position:absolute;inset:0;background:var(--border-2);border-radius:13px;transition:all 0.25s}
+    .toggle input:checked + .toggle-track{background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+    .toggle-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;background:white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.15);transition:transform 0.25s cubic-bezier(0.4,0,0.2,1)}
+    .toggle input:checked ~ .toggle-thumb{transform:translateX(20px)}
+    .toggle-label{font-size:14.5px;color:var(--text);font-weight:500}
+    .stepper{display:flex;align-items:center;border:1.5px solid var(--border-2);border-radius:10px;overflow:hidden;background:var(--surface-2)}
+    .stepper-btn{width:36px;height:36px;border:none;background:transparent;color:var(--text);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;font-weight:600}
+    .stepper-btn:active{background:var(--accent-soft)}
+    .stepper-val{min-width:38px;text-align:center;font-size:14px;font-weight:700;color:var(--text);padding:0 4px}
+    .seg-card{background:var(--surface-solid);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:12px;box-shadow:var(--shadow-sm)}
+    .seg-route{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px}
+    .seg-dots{display:flex;flex-direction:column;align-items:center;padding-top:5px;gap:4px}
+    .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .dot-start{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+    .dot-end{background:var(--accent-2);box-shadow:0 0 0 3px var(--accent-soft)}
+    .dot-line{width:2px;height:22px;background:linear-gradient(var(--accent),var(--accent-2));opacity:0.4}
+    .seg-addrs{flex:1;min-width:0}
+    .seg-from{font-size:14px;font-weight:600;color:var(--text);line-height:1.35;word-wrap:break-word}
+    .seg-to{font-size:14px;color:var(--text-2);line-height:1.35;margin-top:14px;word-wrap:break-word}
+    .seg-divider{height:1px;background:var(--border);margin:12px 0 14px}
+    .seg-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .seg-km{font-size:22px;font-weight:700;letter-spacing:-0.02em;background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .seg-km-sub{font-size:11.5px;color:var(--text-3);margin-top:2px;font-weight:500}
+    .seg-opts{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+    .seg-opts-row{display:flex;align-items:center;gap:8px}
+    .seg-opts-row span{font-size:12.5px;color:var(--text-2);font-weight:500}
+    .purpose-input{height:40px;font-size:13px;margin-top:10px;padding:0 12px;border-radius:10px}
+    .cost-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--success-soft);color:var(--success);border-radius:20px;font-size:11px;font-weight:700;margin-top:6px}
+    .total-hero{position:relative;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:20px;padding:22px 24px;margin-bottom:14px;color:white;overflow:hidden;box-shadow:0 12px 32px rgba(99,102,241,0.35)}
+    .total-hero::before{content:'';position:absolute;top:-50%;right:-20%;width:200px;height:200px;background:rgba(255,255,255,0.1);border-radius:50%;filter:blur(40px)}
+    .total-hero-content{position:relative;display:flex;align-items:center;justify-content:space-between}
+    .total-label{font-size:12px;color:rgba(255,255,255,0.85);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+    .total-value{font-size:36px;font-weight:700;color:white;letter-spacing:-0.03em;line-height:1}
+    .total-unit{font-size:18px;font-weight:500;color:rgba(255,255,255,0.85);margin-left:4px}
+    .total-cost-sub{font-size:13px;color:rgba(255,255,255,0.8);margin-top:4px}
+    .total-hero-icon{width:52px;height:52px;background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);border-radius:14px;display:flex;align-items:center;justify-content:center}
+    .alert{padding:13px 16px;border-radius:12px;font-size:13.5px;margin-bottom:12px;line-height:1.45;font-weight:500;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .alert-error{background:var(--danger-soft);color:var(--danger);border:1px solid var(--danger)}
+    .alert-success{background:var(--success-soft);color:var(--success);border:1px solid var(--success)}
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--surface);backdrop-filter:blur(var(--glass-blur)) saturate(180%);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(180%);border-top:1px solid var(--border);display:flex;padding:8px 4px;padding-bottom:calc(8px + env(safe-area-inset-bottom));gap:2px}
+    .nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;border:none;background:transparent;padding:8px 0;transition:all 0.2s;color:var(--text-3);border-radius:12px;font-family:inherit}
+    .nav-tab.active{color:white;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 4px 12px rgba(99,102,241,0.35)}
+    .nav-tab:not(.active):hover{color:var(--text);background:var(--surface-2)}
+    .nav-tab:active{transform:scale(0.95)}
+    .nav-icon{transition:transform 0.2s;display:flex}
+    .nav-tab.active .nav-icon{transform:scale(1.05)}
+    .nav-label{font-size:10px;font-weight:600;letter-spacing:-0.01em}
+    .fav-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .fav-item:last-child{border-bottom:none}
+    .fav-info{flex:1;min-width:0}
+    .fav-name{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
+    .fav-stops{font-size:12px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .divider{height:1px;background:var(--border);margin:14px 0}
+    .loader-overlay{position:fixed;inset:0;z-index:500;background:var(--surface);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+    .loader-big{width:48px;height:48px;border:3px solid var(--border-2);border-top-color:var(--accent);border-right-color:var(--accent-2);border-radius:50%;animation:spin 0.9s linear infinite}
+    .loader-text{font-size:15px;color:var(--text-2);font-weight:600}
+    .export-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .export-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .empty-state{text-align:center;padding:50px 20px;color:var(--text-2)}
+    .empty-icon{width:72px;height:72px;margin:0 auto 16px;background:var(--accent-soft);color:var(--accent-text);border-radius:20px;display:flex;align-items:center;justify-content:center}
+    .empty-title{font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;letter-spacing:-0.02em}
+    .empty-sub{font-size:14px;color:var(--text-2);line-height:1.5;max-width:280px;margin:0 auto}
+    .btn-add-stop{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;background:transparent;border:1.5px dashed var(--accent-border);border-radius:12px;color:var(--accent-text);font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;margin-top:4px}
+    .btn-add-stop:hover{background:var(--accent-soft);border-style:solid}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--success-soft);color:var(--success);border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+    .badge-dot{width:5px;height:5px;border-radius:50%;background:var(--success);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+    /* Odo row */
+    .odo-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .odo-row input[type="number"]{height:44px;font-size:14px}
+    /* Stat boxes */
+    .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+    .stat-box{background:var(--surface-solid);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center}
+    .stat-box-val{font-size:20px;font-weight:700;color:var(--accent);letter-spacing:-0.02em}
+    .stat-box-lbl{font-size:11px;color:var(--text-3);font-weight:500;margin-top:3px}
+    /* History */
+    .history-item{background:var(--surface-solid);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;overflow:hidden;transition:all 0.2s}
+    .history-header{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;transition:background 0.15s}
+    .history-header:hover{background:var(--surface-2)}
+    .history-date{font-size:13px;font-weight:700;color:var(--text)}
+    .history-vehicle{font-size:11px;color:var(--text-3);margin-top:2px}
+    .history-km{font-size:16px;font-weight:700;color:var(--accent);margin-left:auto;white-space:nowrap}
+    .history-cost{font-size:12px;color:var(--success);font-weight:600;white-space:nowrap}
+    .history-body{padding:0 16px 14px;border-top:1px solid var(--border);margin-top:0}
+    .history-seg{font-size:12.5px;color:var(--text-2);padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
+    .history-seg:last-child{border-bottom:none}
+    .history-purpose{font-size:11px;color:var(--text-3);font-style:italic}
+    .history-actions{display:flex;gap:8px;margin-top:12px}
+    /* Vehicle modal */
+    .modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center}
+    .modal-box{background:var(--surface-solid);border-radius:24px 24px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom));width:100%;max-width:680px;max-height:85dvh;overflow-y:auto}
+    .modal-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
+    .vehicle-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .vehicle-item:last-child{border-bottom:none}
+    .vehicle-info{flex:1;min-width:0}
+    .vehicle-name{font-size:14px;font-weight:600;color:var(--text)}
+    .vehicle-plate{font-size:12px;color:var(--accent-text);font-weight:600;background:var(--accent-soft);padding:2px 8px;border-radius:6px;display:inline-block;margin-top:3px}
+    .vehicle-meta{font-size:11px;color:var(--text-3);margin-top:3px}
+    .vehicle-form{background:var(--surface-2);border-radius:14px;padding:16px;margin-top:14px}
+    .vehicle-form .field{margin-bottom:10px}
+    .vehicle-form .field label{margin-bottom:4px}
+    .vehicle-form input{height:44px;font-size:14px}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    /* Map */
+    .map-outer{height:calc(100dvh - 64px - 90px);position:relative}
+    .map-leaflet{height:100%;width:100%}
+    .map-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text-2)}
+    .map-empty svg{opacity:0.3}
+    /* Month filter */
+    .month-select select{height:44px;font-size:14px}
+    /* Inline label+action */
+    .label-action{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .label-action label{margin-bottom:0}
+    @media(min-width:480px){.view{padding:22px 20px 0}}
+    @media(min-width:680px){.bottom-nav{max-width:680px;left:50%;transform:translateX(-50%);border-radius:20px 20px 0 0}}
   </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="text/babel">
-const { useState, useRef, useEffect } = React;
+const { useState, useRef, useEffect, useCallback } = React;
 
-function getInitialTheme() {
-  const saved = localStorage.getItem('fp_theme');
-  if (saved === 'light' || saved === 'dark') return saved;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-function today() { return new Date().toISOString().slice(0, 10); }
-function fmtDate(iso) {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
-  return `${d}.${m}.${y}`;
-}
-function uid() { return Math.random().toString(36).slice(2, 8); }
-function kmRound(x) { return Math.floor(x * 10 + 0.5) / 10; }
-
-// ---- Translations ----
+// ── Translations ─────────────────────────────────────────────────────────────
 const TRANSLATIONS = {
   en: {
-    appTitle: 'Trip Log',
-    appSub: 'Automatic km calculation',
-    tabRoute: 'Route',
-    tabSegments: 'Segments',
-    tabExport: 'Export',
-    sectionDate: 'Trip log date',
-    sectionStart: 'Starting point',
-    sectionStops: 'Stops',
-    sectionOptions: 'Options',
-    sectionSegments: 'Segments',
-    sectionDownload: 'Download log',
-    sectionFavorites: 'Favorites',
-    optionReturn: 'Return to starting point',
-    btnCalculate: 'Calculate route',
-    btnCalculating: 'Calculating...',
-    btnAddStop: 'Add stop',
-    stopLabel: 'Stop',
-    placeholderStart: 'Search departure address...',
-    placeholderStop: 'Search stop address...',
-    placeholderFavName: 'e.g. Office - Warehouse',
-    labelFavName: 'Route name',
-    btnSaveFav: 'Save current route',
-    btnLoad: 'Load',
-    btnExportFav: 'Export',
-    btnImportFav: 'Import',
-    totalDistance: 'Total distance',
-    totalCalculated: 'Total calculated',
-    roundTrip: 'Round trip',
-    multiplier: '×',
-    btnCSV: 'CSV',
-    btnExcel: 'Excel',
-    emptySegmentsTitle: 'No route calculated',
-    emptySegmentsSub: 'Go to the Route tab and press Calculate to see segments.',
-    emptyExportTitle: 'Nothing to export',
-    emptyExportSub: 'Calculate a route first to download the trip log.',
-    goToRoute: 'Go to Route',
-    noFavorites: 'No favorites saved yet.',
-    badgeCalculated: 'Calculated',
-    msgCSV: 'CSV downloaded successfully.',
-    msgExcel: 'Excel downloaded successfully.',
-    msgFavSaved: (name) => `Favorite "${name}" saved.`,
-    msgImported: 'Favorites imported successfully.',
-    msgInvalidFile: 'Invalid JSON file.',
-    errNoStart: 'The starting point could not be geocoded. Please select an address from the suggestions.',
-    errNoStop: (txt) => `Stop "${txt}" could not be geocoded.`,
-    errUnexpected: 'Unexpected error.',
-    loaderText: 'Calculating route...',
-    colDate: 'Date',
-    colFrom: 'Departure',
-    colTo: 'Destination',
-    colRoundTrip: 'Round trip',
-    colReps: 'Multiplier (×)',
-    colKm: 'Km travelled',
-    colTotal: 'Total KM',
-    yes: 'Yes',
-    no: 'No',
-    themeLight: 'Light mode',
-    themeDark: 'Dark mode',
+    appTitle:'Trip Log', appSub:'Automatic km calculation',
+    tabRoute:'Route', tabMap:'Map', tabSegments:'Segments', tabExport:'Export', tabHistory:'History',
+    sectionDate:'Trip log date', sectionStart:'Starting point', sectionStops:'Stops',
+    sectionOptions:'Options', sectionOdometer:'Odometer', sectionSegments:'Segments',
+    sectionDownload:'Download log', sectionFavorites:'Favorites', sectionMonthly:'Monthly report',
+    optionReturn:'Return to starting point',
+    btnCalculate:'Calculate route', btnCalculating:'Calculating...',
+    btnAddStop:'Add stop', stopLabel:'Stop',
+    placeholderStart:'Search departure address...', placeholderStop:'Search stop address...',
+    placeholderFavName:'e.g. Office - Warehouse', labelFavName:'Route name',
+    btnSaveFav:'Save current route', btnLoad:'Load', btnExportFav:'Export', btnImportFav:'Import',
+    btnSaveHistory:'Save trip', msgTripSaved:'Trip saved to history!',
+    totalDistance:'Total distance', totalCalculated:'Total calculated',
+    roundTrip:'Round trip', multiplier:'×',
+    btnCSV:'CSV', btnExcel:'Excel', btnPDF:'PDF',
+    emptySegmentsTitle:'No route calculated',
+    emptySegmentsSub:'Go to the Route tab and press Calculate to see segments.',
+    emptyExportTitle:'Nothing to export',
+    emptyExportSub:'Calculate a route first to download the trip log.',
+    emptyHistoryTitle:'No trips saved', emptyHistorySub:'Calculated and saved trips will appear here.',
+    goToRoute:'Go to Route', noFavorites:'No favorites saved yet.',
+    badgeCalculated:'Calculated', msgCSV:'CSV downloaded.', msgExcel:'Excel downloaded.',
+    msgPDF:'PDF downloaded.',
+    msgFavSaved:(n)=>`Favorite "${n}" saved.`,
+    msgImported:'Favorites imported.', msgInvalidFile:'Invalid JSON file.',
+    errNoStart:'Starting point could not be geocoded. Select from suggestions.',
+    errNoStop:(t)=>`Stop "${t}" could not be geocoded.`,
+    errUnexpected:'Unexpected error.', loaderText:'Calculating route...',
+    colDate:'Date', colFrom:'Departure', colTo:'Destination', colRoundTrip:'Round trip',
+    colReps:'Multiplier (×)', colKm:'Km', colTotal:'Total KM', colPurpose:'Purpose',
+    yes:'Yes', no:'No', themeLight:'Light mode', themeDark:'Dark mode',
+    odoStart:'Start km', odoEnd:'End km',
+    sectionVehicle:'Vehicle', selectVehicle:'Select vehicle', noVehicle:'No vehicle',
+    btnGeolocate:'My location', geolocating:'Locating...',
+    purposeLabel:'Purpose', purposePlaceholder:'e.g. Meeting, Delivery',
+    sectionCost:'Cost', totalCost:'Total cost',
+    vehiclesTitle:'Vehicles', vehicleName:'Vehicle name', vehiclePlate:'License plate',
+    vehicleConsumption:'Consumption (L/100km)', vehicleFuelPrice:'Fuel price (RON/L)',
+    vehicleDriver:'Driver name', btnAddVehicle:'+ Add vehicle',
+    btnSaveVehicle:'Save vehicle', btnCancelVehicle:'Cancel', emptyVehicles:'No vehicles added.',
+    historyTotalKm:'Total km', historyTotalCost:'Total cost', tripsCount:'Trips',
+    historyFilterMonth:'Filter by month', btnMonthlyReport:'Export monthly Excel',
+    allMonths:'All months', selectMonth:'Select month',
+    btnShareRoute:'Share', msgLinkCopied:'Link copied!',
+    mapNoRoute:'Calculate a route first to see it on the map.',
+    deleteConfirm:'Delete?',
+    driver:'Driver',
   },
   ro: {
-    appTitle: 'Foaie de parcurs',
-    appSub: 'Calcul automat km',
-    tabRoute: 'Traseu',
-    tabSegments: 'Segmente',
-    tabExport: 'Export',
-    sectionDate: 'Data foii de parcurs',
-    sectionStart: 'Punct de plecare',
-    sectionStops: 'Opriri',
-    sectionOptions: 'Opțiuni',
-    sectionSegments: 'Segmente',
-    sectionDownload: 'Descarcă foaia',
-    sectionFavorites: 'Favorite',
-    optionReturn: 'Revenire la punctul de plecare',
-    btnCalculate: 'Calculează traseul',
-    btnCalculating: 'Se calculează...',
-    btnAddStop: 'Adaugă oprire',
-    stopLabel: 'Oprire',
-    placeholderStart: 'Caută adresa de plecare...',
-    placeholderStop: 'Caută adresa opririi...',
-    placeholderFavName: 'ex: Birou - Depozit',
-    labelFavName: 'Nume traseu',
-    btnSaveFav: 'Salvează traseul curent',
-    btnLoad: 'Încarcă',
-    btnExportFav: 'Export',
-    btnImportFav: 'Import',
-    totalDistance: 'Total distanță',
-    totalCalculated: 'Total calculat',
-    roundTrip: 'Dus-întors',
-    multiplier: '×',
-    btnCSV: 'CSV',
-    btnExcel: 'Excel',
-    emptySegmentsTitle: 'Niciun traseu calculat',
-    emptySegmentsSub: 'Mergi la tab-ul Traseu și apasă Calculează pentru a vedea segmentele.',
-    emptyExportTitle: 'Nimic de exportat',
-    emptyExportSub: 'Calculează mai întâi un traseu pentru a putea descărca foaia de parcurs.',
-    goToRoute: 'Mergi la Traseu',
-    noFavorites: 'Niciun favorit salvat încă.',
-    badgeCalculated: 'Calculat',
-    msgCSV: 'CSV descărcat cu succes.',
-    msgExcel: 'Excel descărcat cu succes.',
-    msgFavSaved: (name) => `Favorit "${name}" salvat.`,
-    msgImported: 'Favorite importate cu succes.',
-    msgInvalidFile: 'Fișier JSON invalid.',
-    errNoStart: 'Punctul de plecare nu a putut fi geocodat. Selectează o adresă din lista de sugestii.',
-    errNoStop: (txt) => `Oprirea "${txt}" nu a putut fi geocodată.`,
-    errUnexpected: 'Eroare neașteptată.',
-    loaderText: 'Se calculează traseul...',
-    colDate: 'Data',
-    colFrom: 'Plecare',
-    colTo: 'Destinație',
-    colRoundTrip: 'Dus-întors',
-    colReps: 'Înmulțiri (×)',
-    colKm: 'Km parcurși',
-    colTotal: 'KM totali',
-    yes: 'Da',
-    no: 'Nu',
-    themeLight: 'Mod luminos',
-    themeDark: 'Mod întunecat',
+    appTitle:'Foaie de parcurs', appSub:'Calcul automat km',
+    tabRoute:'Traseu', tabMap:'Hartă', tabSegments:'Segmente', tabExport:'Export', tabHistory:'Istoric',
+    sectionDate:'Data foii de parcurs', sectionStart:'Punct de plecare', sectionStops:'Opriri',
+    sectionOptions:'Opțiuni', sectionOdometer:'Odometru', sectionSegments:'Segmente',
+    sectionDownload:'Descarcă foaia', sectionFavorites:'Favorite', sectionMonthly:'Raport lunar',
+    optionReturn:'Revenire la punctul de plecare',
+    btnCalculate:'Calculează traseul', btnCalculating:'Se calculează...',
+    btnAddStop:'Adaugă oprire', stopLabel:'Oprire',
+    placeholderStart:'Caută adresa de plecare...', placeholderStop:'Caută adresa opririi...',
+    placeholderFavName:'ex: Birou - Depozit', labelFavName:'Nume traseu',
+    btnSaveFav:'Salvează traseul curent', btnLoad:'Încarcă', btnExportFav:'Export', btnImportFav:'Import',
+    btnSaveHistory:'Salvează cursa', msgTripSaved:'Cursa salvată în istoric!',
+    totalDistance:'Total distanță', totalCalculated:'Total calculat',
+    roundTrip:'Dus-întors', multiplier:'×',
+    btnCSV:'CSV', btnExcel:'Excel', btnPDF:'PDF',
+    emptySegmentsTitle:'Niciun traseu calculat',
+    emptySegmentsSub:'Mergi la Traseu și apasă Calculează pentru a vedea segmentele.',
+    emptyExportTitle:'Nimic de exportat',
+    emptyExportSub:'Calculează mai întâi un traseu pentru a putea descărca foaia.',
+    emptyHistoryTitle:'Niciun traseu salvat', emptyHistorySub:'Traseele calculate și salvate vor apărea aici.',
+    goToRoute:'Mergi la Traseu', noFavorites:'Niciun favorit salvat încă.',
+    badgeCalculated:'Calculat', msgCSV:'CSV descărcat.', msgExcel:'Excel descărcat.',
+    msgPDF:'PDF descărcat.',
+    msgFavSaved:(n)=>`Favorit "${n}" salvat.`,
+    msgImported:'Favorite importate.', msgInvalidFile:'Fișier JSON invalid.',
+    errNoStart:'Punctul de plecare nu a putut fi geocodat. Selectează o adresă din sugestii.',
+    errNoStop:(t)=>`Oprirea "${t}" nu a putut fi geocodată.`,
+    errUnexpected:'Eroare neașteptată.', loaderText:'Se calculează traseul...',
+    colDate:'Data', colFrom:'Plecare', colTo:'Destinație', colRoundTrip:'Dus-întors',
+    colReps:'Înmulțiri (×)', colKm:'Km parcurși', colTotal:'KM totali', colPurpose:'Scop',
+    yes:'Da', no:'Nu', themeLight:'Mod luminos', themeDark:'Mod întunecat',
+    odoStart:'Km start', odoEnd:'Km final',
+    sectionVehicle:'Vehicul', selectVehicle:'Alege vehiculul', noVehicle:'Fără vehicul',
+    btnGeolocate:'Locația mea', geolocating:'Se localizează...',
+    purposeLabel:'Scop', purposePlaceholder:'ex: Ședință, Livrare',
+    sectionCost:'Cost', totalCost:'Cost total',
+    vehiclesTitle:'Vehicule', vehicleName:'Nume vehicul', vehiclePlate:'Nr. înmatriculare',
+    vehicleConsumption:'Consum (L/100km)', vehicleFuelPrice:'Preț carburant (RON/L)',
+    vehicleDriver:'Nume șofer', btnAddVehicle:'+ Adaugă vehicul',
+    btnSaveVehicle:'Salvează vehiculul', btnCancelVehicle:'Anulează', emptyVehicles:'Niciun vehicul adăugat.',
+    historyTotalKm:'Total km', historyTotalCost:'Cost total', tripsCount:'Curse',
+    historyFilterMonth:'Filtrează pe lună', btnMonthlyReport:'Export Excel lunar',
+    allMonths:'Toate lunile', selectMonth:'Selectează luna',
+    btnShareRoute:'Partajează', msgLinkCopied:'Link copiat!',
+    mapNoRoute:'Calculează un traseu pentru a-l vedea pe hartă.',
+    deleteConfirm:'Ștergi?',
+    driver:'Șofer',
   },
 };
 
-function getInitialLang() {
-  const saved = localStorage.getItem('fp_lang');
-  if (saved === 'en' || saved === 'ro') return saved;
-  return 'en';
-}
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function getInitialTheme(){const s=localStorage.getItem('fp_theme');return(s==='light'||s==='dark')?s:window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+function getInitialLang(){const s=localStorage.getItem('fp_lang');return(s==='en'||s==='ro')?s:'en'}
+function today(){return new Date().toISOString().slice(0,10)}
+function fmtDate(iso){if(!iso)return '';const[y,m,d]=iso.split('-');return`${d}.${m}.${y}`}
+function uid(){return Math.random().toString(36).slice(2,9)}
+function kmRound(x){return Math.floor(x*10+0.5)/10}
+function fmtMonth(ym){const[y,m]=ym.split('-');const dt=new Date(+y,+m-1,1);return dt.toLocaleDateString(undefined,{year:'numeric',month:'long'})}
+function encodeRoute(start,stops){try{const d={s:{t:start.text,d:start.display},o:stops.map(s=>({t:s.text,d:s.display}))};return btoa(unescape(encodeURIComponent(JSON.stringify(d))))}catch{return null}}
+function decodeRoute(enc){try{return JSON.parse(decodeURIComponent(escape(atob(enc))))}catch{return null}}
 
-async function apiGeocode(q) {
-  const r = await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);
-  if (!r.ok) throw new Error('Eroare geocodare');
-  const d = await r.json();
-  return d.results || [];
-}
+// ── Storage ───────────────────────────────────────────────────────────────────
+function loadVehicles(){try{return JSON.parse(localStorage.getItem('fp_vehicles')||'[]')}catch{return []}}
+function saveVehicles(v){localStorage.setItem('fp_vehicles',JSON.stringify(v))}
+function loadHistory(){try{return JSON.parse(localStorage.getItem('fp_history')||'[]')}catch{return []}}
+function saveHistory(h){localStorage.setItem('fp_history',JSON.stringify(h))}
 
-async function apiRoute(points) {
-  const r = await fetch('/api/route', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ points }),
-  });
-  if (!r.ok) {
-    const d = await r.json().catch(() => ({}));
-    throw new Error(d.detail || 'Eroare rutare');
-  }
-  return r.json();
-}
+// ── API ───────────────────────────────────────────────────────────────────────
+async function apiGeocode(q){const r=await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);if(!r.ok)throw new Error('Geocoding error');return(await r.json()).results||[]}
+async function apiReverse(lat,lon){const r=await fetch(`/api/reverse?lat=${lat}&lon=${lon}`);if(!r.ok)return null;return r.json()}
+async function apiRoute(points){const r=await fetch('/api/route',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({points})});if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||'Routing error')}return r.json()}
+async function apiExportExcel(rows,total,dateStr,colTotal){const r=await fetch('/api/export/excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows,total,date_str:dateStr,total_col_label:colTotal})});if(!r.ok)throw new Error('Export error');const blob=await r.blob();_downloadBlob(blob,`foaie_parcurs_${dateStr}.xlsx`)}
+async function apiExportPDF(rows,total,dateStr,title,vehicle,driver,colTotal){const r=await fetch('/api/export/pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows,total,date_str:dateStr,title,vehicle,driver,total_col_label:colTotal})});if(!r.ok)throw new Error('PDF error');const blob=await r.blob();_downloadBlob(blob,`foaie_parcurs_${dateStr}.pdf`)}
+function _downloadBlob(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
+function exportCSV(rows,dateStr){const cols=Object.keys(rows[0]);const lines=[cols.join(','),...rows.map(r=>cols.map(c=>`"${String(r[c]).replace(/"/g,'""')}"`).join(','))];const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});_downloadBlob(blob,`foaie_parcurs_${dateStr}.csv`)}
 
-async function apiExportExcel(rows, total, dateStr) {
-  const r = await fetch('/api/export/excel', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rows, total, date_str: dateStr, total_col_label: t.colTotal }),
-  });
-  if (!r.ok) throw new Error('Eroare export Excel');
-  const blob = await r.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `foaie_parcurs_${dateStr}.xlsx`; a.click();
-  URL.revokeObjectURL(url);
-}
+// ── Icons ─────────────────────────────────────────────────────────────────────
+const Icon=({name,size=18})=>{const p={width:size,height:size,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"};const icons={
+  sun:<svg {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>,
+  moon:<svg {...p}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+  map:<svg {...p}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>,
+  list:<svg {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><circle cx="3" cy="18" r="1.5" fill="currentColor"/></svg>,
+  download:<svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+  pin:<svg {...p}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+  arrowUp:<svg {...p} strokeWidth="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>,
+  arrowDown:<svg {...p} strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>,
+  x:<svg {...p} strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  plus:<svg {...p} strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  car:<svg {...p}><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>,
+  file:<svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+  sheet:<svg {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>,
+  upload:<svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+  star:<svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  clock:<svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  share:<svg {...p}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
+  gps:<svg {...p}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>,
+  fuel:<svg {...p}><path d="M3 22V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14"/><path d="M3 11h12"/><path d="M17 11h2a2 2 0 0 1 2 2v5a1 1 0 0 0 2 0V9l-3-3"/></svg>,
+  grip:<svg {...p}><circle cx="9" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="9" cy="17" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="17" r="1" fill="currentColor" stroke="none"/></svg>,
+  save:<svg {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+  chevronDown:<svg {...p}><polyline points="6 9 12 15 18 9"/></svg>,
+  chevronUp:<svg {...p}><polyline points="18 15 12 9 6 15"/></svg>,
+  trash:<svg {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>,
+  settings:<svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+};return icons[name]||null};
 
-function exportCSV(rows, dateStr) {
-  const cols = Object.keys(rows[0]);
-  const lines = [cols.join(','), ...rows.map(r => cols.map(c => `"${String(r[c]).replace(/"/g, '""')}"`).join(','))];
-  const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `foaie_parcurs_${dateStr}.csv`; a.click();
-  URL.revokeObjectURL(url);
-}
-
-const Icon = ({ name, size = 18 }) => {
-  const props = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
-  const icons = {
-    sun: <svg {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>,
-    moon: <svg {...props}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
-    map: <svg {...props}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>,
-    list: <svg {...props}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><circle cx="3" cy="18" r="1.5" fill="currentColor"/></svg>,
-    download: <svg {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
-    pin: <svg {...props}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
-    arrowUp: <svg {...props} strokeWidth="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>,
-    arrowDown: <svg {...props} strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>,
-    x: <svg {...props} strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-    plus: <svg {...props} strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-    car: <svg {...props}><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>,
-    file: <svg {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
-    sheet: <svg {...props}><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>,
-    upload: <svg {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
-    star: <svg {...props}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+// ── AddressInput ──────────────────────────────────────────────────────────────
+function AddressInput({value,display,onTextChange,onSelect,placeholder}){
+  const[candidates,setCandidates]=useState([]);
+  const[loading,setLoading]=useState(false);
+  const[open,setOpen]=useState(false);
+  const timer=useRef(null);
+  const wrapRef=useRef(null);
+  useEffect(()=>{
+    function h(e){if(wrapRef.current&&!wrapRef.current.contains(e.target))setOpen(false)}
+    document.addEventListener('mousedown',h);document.addEventListener('touchstart',h);
+    return()=>{document.removeEventListener('mousedown',h);document.removeEventListener('touchstart',h)};
+  },[]);
+  const handleChange=e=>{
+    const v=e.target.value;onTextChange(v);clearTimeout(timer.current);
+    if(v.length>=3){timer.current=setTimeout(async()=>{setLoading(true);try{const r=await apiGeocode(v);setCandidates(r);setOpen(r.length>0)}catch{}setLoading(false)},450)}
+    else{setCandidates([]);setOpen(false)}
   };
-  return icons[name] || null;
-};
-
-function AddressInput({ value, display, onTextChange, onSelect, placeholder }) {
-  const [candidates, setCandidates] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const timer = useRef(null);
-  const wrapRef = useRef(null);
-
-  useEffect(() => {
-    function handleClick(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handleClick);
-    document.addEventListener('touchstart', handleClick);
-    return () => { document.removeEventListener('mousedown', handleClick); document.removeEventListener('touchstart', handleClick); };
-  }, []);
-
-  const handleChange = (e) => {
-    const v = e.target.value;
-    onTextChange(v);
-    clearTimeout(timer.current);
-    if (v.length >= 3) {
-      timer.current = setTimeout(async () => {
-        setLoading(true);
-        try {
-          const r = await apiGeocode(v);
-          setCandidates(r);
-          setOpen(r.length > 0);
-        } catch {}
-        setLoading(false);
-      }, 450);
-    } else {
-      setCandidates([]);
-      setOpen(false);
-    }
-  };
-
-  const handleSelect = (c) => {
-    onSelect(c);
-    setCandidates([]);
-    setOpen(false);
-  };
-
-  return (
+  const handleSelect=c=>{onSelect(c);setCandidates([]);setOpen(false)};
+  return(
     <div className="field" ref={wrapRef}>
       <div className="input-wrap">
-        <input
-          type="text"
-          value={value}
-          onChange={handleChange}
-          onFocus={() => candidates.length > 0 && setOpen(true)}
-          placeholder={placeholder}
-          autoComplete="off" autoCorrect="off" spellCheck="false"
-        />
-        {loading && <div className="input-spinner" />}
+        <input type="text" value={value} onChange={handleChange} onFocus={()=>candidates.length>0&&setOpen(true)} placeholder={placeholder} autoComplete="off" autoCorrect="off" spellCheck="false"/>
+        {loading&&<div className="input-spinner"/>}
       </div>
-      {open && candidates.length > 0 && (
+      {open&&candidates.length>0&&(
         <ul className="candidates">
-          {candidates.map((c, i) => (
-            <li key={i} onMouseDown={() => handleSelect(c)} onTouchStart={() => handleSelect(c)}>
-              {c.display}
-            </li>
-          ))}
+          {candidates.map((c,i)=><li key={i} onMouseDown={()=>handleSelect(c)} onTouchStart={()=>handleSelect(c)}>{c.display}</li>)}
         </ul>
       )}
-      {display && (
-        <div className="selected-addr">
-          <Icon name="pin" size={13} />
-          <span>{display}</span>
+      {display&&<div className="selected-addr"><Icon name="pin" size={13}/><span>{display}</span></div>}
+    </div>
+  );
+}
+
+function Toggle({checked,onChange,label}){
+  return(<label className="toggle-row"><div className="toggle"><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)}/><div className="toggle-track"/><div className="toggle-thumb"/></div><span className="toggle-label">{label}</span></label>);
+}
+
+function Stepper({value,onChange,min=1,max=50}){
+  return(<div className="stepper"><button className="stepper-btn" onClick={()=>onChange(Math.max(min,value-1))}>−</button><div className="stepper-val">{value}</div><button className="stepper-btn" onClick={()=>onChange(Math.min(max,value+1))}>+</button></div>);
+}
+
+// ── VehicleModal ──────────────────────────────────────────────────────────────
+function VehicleModal({vehicles,onSave,onClose,t}){
+  const blank={id:'',name:'',plate:'',consumption:'',fuelPrice:'',driver:''};
+  const[form,setForm]=useState(null);
+  const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
+  const handleSave=()=>{
+    if(!form.name.trim())return;
+    const v={...form,id:form.id||uid()};
+    onSave(prev=>{
+      const idx=prev.findIndex(x=>x.id===v.id);
+      return idx>=0?prev.map(x=>x.id===v.id?v:x):[...prev,v];
+    });
+    setForm(null);
+  };
+  const handleDelete=id=>onSave(prev=>prev.filter(x=>x.id!==id));
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal-box">
+        <div className="modal-title">
+          <span>{t.vehiclesTitle}</span>
+          <button className="btn-icon" onClick={onClose}><Icon name="x" size={16}/></button>
+        </div>
+        {vehicles.length===0&&!form&&<div style={{textAlign:'center',padding:'20px 0',color:'var(--text-3)',fontSize:14}}>{t.emptyVehicles}</div>}
+        {vehicles.map(v=>(
+          <div key={v.id} className="vehicle-item">
+            <div className="vehicle-info">
+              <div className="vehicle-name">{v.name}</div>
+              {v.plate&&<div className="vehicle-plate">{v.plate}</div>}
+              <div className="vehicle-meta">{[v.consumption&&`${v.consumption} L/100km`,v.fuelPrice&&`${v.fuelPrice} RON/L`,v.driver].filter(Boolean).join(' · ')}</div>
+            </div>
+            <button className="btn-icon" onClick={()=>setForm({...v})} style={{marginRight:4}}><Icon name="settings" size={14}/></button>
+            <button className="btn-icon danger" onClick={()=>handleDelete(v.id)}><Icon name="trash" size={14}/></button>
+          </div>
+        ))}
+        {form?(
+          <div className="vehicle-form">
+            <div className="field"><label>{t.vehicleName}</label><input type="text" value={form.name} onChange={set('name')} placeholder="ex: Dacia Logan"/></div>
+            <div className="field-row">
+              <div className="field"><label>{t.vehiclePlate}</label><input type="text" value={form.plate} onChange={set('plate')} placeholder="B-000-XYZ"/></div>
+              <div className="field"><label>{t.vehicleDriver}</label><input type="text" value={form.driver} onChange={set('driver')} placeholder="Nume șofer"/></div>
+            </div>
+            <div className="field-row">
+              <div className="field"><label>{t.vehicleConsumption}</label><input type="number" value={form.consumption} onChange={set('consumption')} placeholder="7.5" min="0" step="0.1"/></div>
+              <div className="field"><label>{t.vehicleFuelPrice}</label><input type="number" value={form.fuelPrice} onChange={set('fuelPrice')} placeholder="7.20" min="0" step="0.01"/></div>
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:4}}>
+              <button className="btn btn-primary" style={{height:42,fontSize:14}} onClick={handleSave}>{t.btnSaveVehicle}</button>
+              <button className="btn btn-outline" style={{height:42,fontSize:14}} onClick={()=>setForm(null)}>{t.btnCancelVehicle}</button>
+            </div>
+          </div>
+        ):(
+          <button className="btn btn-outline btn-sm" style={{marginTop:14}} onClick={()=>setForm({...blank})}>
+            <Icon name="plus" size={14}/>{t.btnAddVehicle}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── MapView ───────────────────────────────────────────────────────────────────
+function MapView({coords,segments,isActive,t}){
+  const containerRef=useRef(null);
+  const mapRef=useRef(null);
+  const tileRef=useRef(null);
+  const polyRef=useRef(null);
+  const markersRef=useRef([]);
+
+  useEffect(()=>{
+    const L=window.L;
+    if(!L||!containerRef.current)return;
+    if(!mapRef.current){
+      mapRef.current=L.map(containerRef.current,{center:[45.9432,24.9668],zoom:7,zoomControl:true});
+      tileRef.current=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'}).addTo(mapRef.current);
+    }
+    if(isActive)setTimeout(()=>mapRef.current?.invalidateSize(),120);
+  },[isActive]);
+
+  useEffect(()=>{
+    const L=window.L;
+    const map=mapRef.current;
+    if(!L||!map||!coords.length)return;
+    if(polyRef.current){map.removeLayer(polyRef.current);polyRef.current=null}
+    markersRef.current.forEach(m=>map.removeLayer(m));
+    markersRef.current=[];
+    const ll=coords.map(([lon,lat])=>[lat,lon]);
+    polyRef.current=L.polyline(ll,{color:'#6366F1',weight:5,opacity:0.85}).addTo(map);
+    const mkIcon=(color,label)=>L.divIcon({
+      html:`<div style="width:28px;height:28px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:700;font-family:system-ui">${label}</div>`,
+      iconSize:[28,28],iconAnchor:[14,14],className:''
+    });
+    segments.forEach((seg,i)=>{
+      if(i===0){
+        const m=L.marker(ll[0],{icon:mkIcon('#6366F1','S')}).addTo(map);
+        m.bindPopup(`<b>${seg.from}</b>`);
+        markersRef.current.push(m);
+      }
+      const m=L.marker(ll[Math.min(ll.length-1,Math.round((i+1)*ll.length/segments.length))],{icon:mkIcon('#8B5CF6',i+1)}).addTo(map);
+      m.bindPopup(`<b>${seg.to}</b>`);
+      markersRef.current.push(m);
+    });
+    map.fitBounds(polyRef.current.getBounds(),{padding:[30,30]});
+  },[coords,segments]);
+
+  return(
+    <div className="map-outer" style={{display:isActive?'block':'none'}}>
+      <div ref={containerRef} className="map-leaflet"/>
+      {!coords.length&&(
+        <div className="map-empty" style={{position:'absolute',inset:0,background:'var(--surface)',backdropFilter:'blur(4px)'}}>
+          <Icon name="map" size={48}/>
+          <span style={{fontSize:14,fontWeight:600}}>{t.mapNoRoute}</span>
         </div>
       )}
     </div>
   );
 }
 
-function Toggle({ checked, onChange, label }) {
-  return (
-    <label className="toggle-row">
-      <div className="toggle">
-        <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
-        <div className="toggle-track" />
-        <div className="toggle-thumb" />
-      </div>
-      <span className="toggle-label">{label}</span>
-    </label>
-  );
-}
+// ── RouteView ─────────────────────────────────────────────────────────────────
+function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setCloseLoop,odoStart,setOdoStart,odoEnd,setOdoEnd,vehicles,selectedVehicleId,setSelectedVehicleId,onCalculate,calculating,t}){
+  const[geolocating,setGeolocating]=useState(false);
+  const dragIdx=useRef(null);
+  const[dragOverId,setDragOverId]=useState(null);
 
-function Stepper({ value, onChange, min = 1, max = 50 }) {
-  return (
-    <div className="stepper">
-      <button className="stepper-btn" onClick={() => onChange(Math.max(min, value - 1))}>−</button>
-      <div className="stepper-val">{value}</div>
-      <button className="stepper-btn" onClick={() => onChange(Math.min(max, value + 1))}>+</button>
-    </div>
-  );
-}
+  const newStop=()=>({id:uid(),text:'',lat:null,lon:null,display:''});
+  const updateStop=(id,patch)=>setStops(p=>p.map(s=>s.id===id?{...s,...patch}:s));
+  const removeStop=id=>setStops(p=>p.filter(s=>s.id!==id));
 
-function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop, setCloseLoop, onCalculate, calculating, t }) {
-  const newStop = () => ({ id: uid(), text: '', lat: null, lon: null, display: '' });
-  const updateStop = (id, patch) => setStops(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
-  const removeStop = (id) => setStops(prev => prev.filter(s => s.id !== id));
-  const moveStop = (id, dir) => {
-    setStops(prev => {
-      const idx = prev.findIndex(s => s.id === id);
-      const next = idx + dir;
-      if (next < 0 || next >= prev.length) return prev;
-      const arr = [...prev];
-      [arr[idx], arr[next]] = [arr[next], arr[idx]];
-      return arr;
-    });
+  const handleGeolocate=()=>{
+    if(!navigator.geolocation)return;
+    setGeolocating(true);
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const{latitude:lat,longitude:lon}=pos.coords;
+      const res=await apiReverse(lat,lon);
+      if(res){setStart({text:res.display,lat:res.lat,lon:res.lon,display:res.display})}
+      setGeolocating(false);
+    },()=>setGeolocating(false),{timeout:10000});
   };
 
-  return (
+  // Drag handlers
+  const onDragStart=(e,id)=>{dragIdx.current=id;e.dataTransfer.effectAllowed='move'};
+  const onDragOver=(e,id)=>{e.preventDefault();setDragOverId(id)};
+  const onDrop=(e,targetId)=>{
+    e.preventDefault();
+    if(!dragIdx.current||dragIdx.current===targetId)return;
+    setStops(prev=>{
+      const arr=[...prev];
+      const from=arr.findIndex(s=>s.id===dragIdx.current);
+      const to=arr.findIndex(s=>s.id===targetId);
+      const[item]=arr.splice(from,1);arr.splice(to,0,item);return arr;
+    });
+    dragIdx.current=null;setDragOverId(null);
+  };
+  const onDragEnd=()=>{dragIdx.current=null;setDragOverId(null)};
+
+  return(
     <div className="view">
       <div className="card">
         <div className="card-title"><span className="card-title-dot"/>{t.sectionDate}</div>
-        <div className="field">
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-        </div>
+        <div className="field"><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></div>
       </div>
 
+      {vehicles.length>0&&(
+        <div className="card">
+          <div className="card-title"><span className="card-title-dot"/>{t.sectionVehicle}</div>
+          <div className="field">
+            <select value={selectedVehicleId} onChange={e=>setSelectedVehicleId(e.target.value)}>
+              <option value="">{t.noVehicle}</option>
+              {vehicles.map(v=><option key={v.id} value={v.id}>{v.name}{v.plate?` · ${v.plate}`:''}</option>)}
+            </select>
+          </div>
+        </div>
+      )}
+
       <div className="card">
-        <div className="card-title"><span className="card-title-dot"/>{t.sectionStart}</div>
-        <AddressInput
-          value={start.text}
-          display={start.display}
-          onTextChange={v => setStart(p => ({ ...p, text: v, lat: null, lon: null, display: '' }))}
-          onSelect={c => setStart({ text: c.display, lat: c.lat, lon: c.lon, display: c.display })}
-          placeholder={t.placeholderStart}
-        />
+        <div className="card-title">
+          <span className="card-title-dot"/>
+          <span style={{flex:1}}>{t.sectionStart}</span>
+          <button className="btn-geo" onClick={handleGeolocate} disabled={geolocating}>
+            <Icon name="gps" size={13}/>{geolocating?t.geolocating:t.btnGeolocate}
+          </button>
+        </div>
+        <AddressInput value={start.text} display={start.display}
+          onTextChange={v=>setStart(p=>({...p,text:v,lat:null,lon:null,display:''}))}
+          onSelect={c=>setStart({text:c.display,lat:c.lat,lon:c.lon,display:c.display})}
+          placeholder={t.placeholderStart}/>
       </div>
 
       <div className="card">
         <div className="card-title"><span className="card-title-dot"/>{t.sectionStops} · {stops.length}</div>
-        {stops.map((s, i) => (
-          <div key={s.id} className="stop-item">
+        {stops.map((s,i)=>(
+          <div key={s.id}
+            className={`stop-item${dragOverId===s.id?' drag-over':''}`}
+            draggable
+            onDragStart={e=>onDragStart(e,s.id)}
+            onDragOver={e=>onDragOver(e,s.id)}
+            onDrop={e=>onDrop(e,s.id)}
+            onDragEnd={onDragEnd}>
             <div className="stop-header">
               <span className="stop-label">
-                <span className="stop-num">{i + 1}</span>
-                {t.stopLabel}
+                <span className="drag-handle"><Icon name="grip" size={16}/></span>
+                <span className="stop-num">{i+1}</span>{t.stopLabel}
               </span>
               <div className="stop-actions">
-                <button className="btn-icon" disabled={i === 0} onClick={() => moveStop(s.id, -1)} aria-label="Sus"><Icon name="arrowUp" size={14}/></button>
-                <button className="btn-icon" disabled={i === stops.length - 1} onClick={() => moveStop(s.id, 1)} aria-label="Jos"><Icon name="arrowDown" size={14}/></button>
-                <button className="btn-icon danger" onClick={() => removeStop(s.id)} aria-label="Șterge"><Icon name="x" size={14}/></button>
+                <button className="btn-icon" disabled={i===0} onClick={()=>setStops(p=>{const a=[...p];[a[i],a[i-1]]=[a[i-1],a[i]];return a})} aria-label="Sus"><Icon name="arrowUp" size={14}/></button>
+                <button className="btn-icon" disabled={i===stops.length-1} onClick={()=>setStops(p=>{const a=[...p];[a[i],a[i+1]]=[a[i+1],a[i]];return a})} aria-label="Jos"><Icon name="arrowDown" size={14}/></button>
+                <button className="btn-icon danger" onClick={()=>removeStop(s.id)} aria-label="Șterge"><Icon name="x" size={14}/></button>
               </div>
             </div>
-            <AddressInput
-              value={s.text}
-              display={s.display}
-              onTextChange={v => updateStop(s.id, { text: v, lat: null, lon: null, display: '' })}
-              onSelect={c => updateStop(s.id, { text: c.display, lat: c.lat, lon: c.lon, display: c.display })}
-              placeholder={t.placeholderStop}
-            />
+            <AddressInput value={s.text} display={s.display}
+              onTextChange={v=>updateStop(s.id,{text:v,lat:null,lon:null,display:''})}
+              onSelect={c=>updateStop(s.id,{text:c.display,lat:c.lat,lon:c.lon,display:c.display})}
+              placeholder={t.placeholderStop}/>
           </div>
         ))}
-        <button className="btn-add-stop" onClick={() => setStops(p => [...p, newStop()])}>
-          <Icon name="plus" size={16}/> {t.btnAddStop}
-        </button>
+        <button className="btn-add-stop" onClick={()=>setStops(p=>[...p,newStop()])}><Icon name="plus" size={16}/>{t.btnAddStop}</button>
       </div>
 
       <div className="card">
         <div className="card-title"><span className="card-title-dot"/>{t.sectionOptions}</div>
-        <Toggle checked={closeLoop} onChange={setCloseLoop} label={t.optionReturn} />
+        <Toggle checked={closeLoop} onChange={setCloseLoop} label={t.optionReturn}/>
       </div>
 
-      <div style={{ marginBottom: 16 }}>
+      <div className="card">
+        <div className="card-title"><span className="card-title-dot"/>{t.sectionOdometer}</div>
+        <div className="odo-row">
+          <div className="field" style={{marginBottom:0}}>
+            <label>{t.odoStart}</label>
+            <input type="number" value={odoStart} onChange={e=>setOdoStart(e.target.value)} placeholder="ex: 12345" min="0"/>
+          </div>
+          <div className="field" style={{marginBottom:0}}>
+            <label>{t.odoEnd}</label>
+            <input type="number" value={odoEnd} onChange={e=>setOdoEnd(e.target.value)} placeholder="ex: 12390" min="0"/>
+          </div>
+        </div>
+      </div>
+
+      <div style={{marginBottom:16}}>
         <button className="btn btn-primary" onClick={onCalculate} disabled={calculating}>
-          {calculating ? t.btnCalculating : (<><Icon name="map" size={18}/> {t.btnCalculate}</>)}
+          {calculating?t.btnCalculating:<><Icon name="map" size={18}/>{t.btnCalculate}</>}
         </button>
       </div>
     </div>
   );
 }
 
-function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute, t }) {
-  if (!segments.length) {
-    return (
+// ── SegmentsView ──────────────────────────────────────────────────────────────
+function SegmentsView({segments,segOpts,setSegOpts,vehicles,selectedVehicleId,onGoRoute,onSaveHistory,t}){
+  const vehicle=vehicles.find(v=>v.id===selectedVehicleId)||null;
+
+  if(!segments.length){
+    return(
       <div className="view">
         <div className="empty-state">
           <div className="empty-icon"><Icon name="map" size={32}/></div>
           <div className="empty-title">{t.emptySegmentsTitle}</div>
           <div className="empty-sub">{t.emptySegmentsSub}</div>
-          <div style={{ marginTop: 22 }}>
-            <button className="btn btn-outline" style={{ width: 'auto', padding: '0 28px' }} onClick={onGoRoute}>
-              {t.goToRoute}
-            </button>
-          </div>
+          <div style={{marginTop:22}}><button className="btn btn-outline" style={{width:'auto',padding:'0 28px'}} onClick={onGoRoute}>{t.goToRoute}</button></div>
         </div>
       </div>
     );
   }
 
-  const updateOpt = (i, patch) => setSegOpts(prev => prev.map((o, j) => j === i ? { ...o, ...patch } : o));
-  const total = segments.reduce((sum, seg, i) => {
-    const opt = segOpts[i] || { roundTrip: false, reps: 1 };
-    return sum + kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
-  }, 0);
+  const updateOpt=(i,patch)=>setSegOpts(p=>p.map((o,j)=>j===i?{...o,...patch}:o));
+  const total=segments.reduce((sum,seg,i)=>{
+    const opt=segOpts[i]||{roundTrip:false,reps:1};
+    return sum+kmRound(seg.km_oneway*(opt.roundTrip?2:1)*opt.reps);
+  },0);
 
-  return (
+  const calcCost=km=>{
+    if(!vehicle||!vehicle.consumption||!vehicle.fuelPrice)return null;
+    return kmRound(km*parseFloat(vehicle.consumption)/100*parseFloat(vehicle.fuelPrice));
+  };
+  const totalCost=calcCost(total);
+
+  return(
     <div className="view">
       <div className="total-hero">
         <div className="total-hero-content">
           <div>
             <div className="total-label">{t.totalDistance}</div>
-            <div>
-              <span className="total-value">{kmRound(total).toFixed(1)}</span>
-              <span className="total-unit">km</span>
-            </div>
+            <div><span className="total-value">{kmRound(total).toFixed(1)}</span><span className="total-unit">km</span></div>
+            {totalCost!=null&&<div className="total-cost-sub">{t.totalCost}: {totalCost.toFixed(2)} RON</div>}
           </div>
           <div className="total-hero-icon"><Icon name="car" size={26}/></div>
         </div>
       </div>
 
-      {segments.map((seg, i) => {
-        const opt = segOpts[i] || { roundTrip: false, reps: 1 };
-        const km = kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
-        return (
+      {segments.map((seg,i)=>{
+        const opt=segOpts[i]||{roundTrip:false,reps:1,purpose:''};
+        const km=kmRound(seg.km_oneway*(opt.roundTrip?2:1)*opt.reps);
+        const cost=calcCost(km);
+        return(
           <div key={i} className="seg-card">
             <div className="seg-route">
-              <div className="seg-dots">
-                <div className="dot dot-start" />
-                <div className="dot-line" />
-                <div className="dot dot-end" />
-              </div>
+              <div className="seg-dots"><div className="dot dot-start"/><div className="dot-line"/><div className="dot dot-end"/></div>
               <div className="seg-addrs">
                 <div className="seg-from">{seg.from}</div>
                 <div className="seg-to">{seg.to}</div>
               </div>
             </div>
-            <div className="seg-divider" />
+            <div className="seg-divider"/>
             <div className="seg-controls">
               <div>
                 <div className="seg-km">{km.toFixed(1)} km</div>
-                <div className="seg-km-sub">
-                  {seg.km_oneway} km × {opt.reps}{opt.roundTrip ? ` × 2 (${t.roundTrip.toLowerCase()})` : ''}
-                </div>
+                <div className="seg-km-sub">{seg.km_oneway} km × {opt.reps}{opt.roundTrip?` × 2 (${t.roundTrip.toLowerCase()})`:''}</div>
+                {cost!=null&&<div className="cost-tag"><Icon name="fuel" size={10}/>{cost.toFixed(2)} RON</div>}
               </div>
               <div className="seg-opts">
-                <Toggle checked={opt.roundTrip} onChange={v => updateOpt(i, { roundTrip: v })} label={t.roundTrip} />
-                <div className="seg-opts-row">
-                  <span>{t.multiplier}</span>
-                  <Stepper value={opt.reps} onChange={v => updateOpt(i, { reps: v })} />
-                </div>
+                <Toggle checked={opt.roundTrip} onChange={v=>updateOpt(i,{roundTrip:v})} label={t.roundTrip}/>
+                <div className="seg-opts-row"><span>{t.multiplier}</span><Stepper value={opt.reps} onChange={v=>updateOpt(i,{reps:v})}/></div>
               </div>
             </div>
+            <input type="text" className="purpose-input" value={opt.purpose||''} onChange={e=>updateOpt(i,{purpose:e.target.value})} placeholder={`${t.purposeLabel}: ${t.purposePlaceholder}`}/>
           </div>
         );
       })}
+
+      <div style={{marginBottom:16}}>
+        <button className="btn btn-primary" onClick={onSaveHistory}>
+          <Icon name="save" size={18}/>{t.btnSaveHistory}
+        </button>
+      </div>
     </div>
   );
 }
 
-function ExportView({ segments, segOpts, date, start, stops, setStart, setStops, setSegments, setSegOpts, setTab, t }) {
-  const [favName, setFavName] = useState('');
-  const [favorites, setFavorites] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('fp_favorites') || '{}'); } catch { return {}; }
-  });
-  const [exporting, setExporting] = useState(false);
-  const [msg, setMsg] = useState('');
+// ── ExportView ────────────────────────────────────────────────────────────────
+function ExportView({segments,segOpts,date,start,stops,vehicles,selectedVehicleId,setStart,setStops,setSegments,setSegOpts,setTab,t,lang}){
+  const[favName,setFavName]=useState('');
+  const[favorites,setFavorites]=useState(()=>{try{return JSON.parse(localStorage.getItem('fp_favorites')||'{}')}catch{return{}}});
+  const[exporting,setExporting]=useState(false);
+  const[msg,setMsg]=useState('');
+  const[selMonth,setSelMonth]=useState('');
+  const history=loadHistory();
+  const vehicle=vehicles.find(v=>v.id===selectedVehicleId)||null;
 
-  const saveFavs = (obj) => {
-    setFavorites(obj);
-    localStorage.setItem('fp_favorites', JSON.stringify(obj));
-  };
+  const saveFavs=obj=>{setFavorites(obj);localStorage.setItem('fp_favorites',JSON.stringify(obj))};
+  const total=segments.reduce((sum,seg,i)=>{const opt=segOpts[i]||{roundTrip:false,reps:1};return sum+kmRound(seg.km_oneway*(opt.roundTrip?2:1)*opt.reps)},0);
+  const dateStr=date.replace(/-/g,'');
 
-  const total = segments.reduce((sum, seg, i) => {
-    const opt = segOpts[i] || { roundTrip: false, reps: 1 };
-    return sum + kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
-  }, 0);
-  const dateStr = date.replace(/-/g, '');
-
-  const buildRows = () => segments.map((seg, i) => {
-    const opt = segOpts[i] || { roundTrip: false, reps: 1 };
-    const km = kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
-    return {
-      [t.colDate]: fmtDate(date),
-      [t.colFrom]: seg.from,
-      [t.colTo]: seg.to,
-      [t.colRoundTrip]: opt.roundTrip ? t.yes : t.no,
-      [t.colReps]: opt.reps,
-      [t.colKm]: km,
-    };
+  const buildRows=()=>segments.map((seg,i)=>{
+    const opt=segOpts[i]||{roundTrip:false,reps:1,purpose:''};
+    const km=kmRound(seg.km_oneway*(opt.roundTrip?2:1)*opt.reps);
+    return{[t.colDate]:fmtDate(date),[t.colFrom]:seg.from,[t.colTo]:seg.to,[t.colPurpose]:opt.purpose||'',[t.colRoundTrip]:opt.roundTrip?t.yes:t.no,[t.colReps]:opt.reps,[t.colKm]:km};
   });
 
-  const handleCSV = () => {
-    if (!segments.length) return;
-    exportCSV(buildRows(), dateStr);
-    setMsg(t.msgCSV);
-    setTimeout(() => setMsg(''), 3000);
+  const flash=m=>{setMsg(m);setTimeout(()=>setMsg(''),3500)};
+
+  const handleCSV=()=>{if(!segments.length)return;exportCSV(buildRows(),dateStr);flash(t.msgCSV)};
+  const handleExcel=async()=>{if(!segments.length)return;setExporting(true);try{await apiExportExcel(buildRows(),total,dateStr,t.colTotal);flash(t.msgExcel)}catch(e){flash('Eroare: '+e.message)}setExporting(false)};
+  const handlePDF=async()=>{if(!segments.length)return;setExporting(true);try{await apiExportPDF(buildRows(),total,dateStr,t.appTitle,vehicle?`${vehicle.name} ${vehicle.plate||''}`.trim():'',vehicle?.driver||'',t.colTotal);flash(t.msgPDF)}catch(e){flash('Eroare: '+e.message)}setExporting(false)};
+
+  const handleShare=async()=>{
+    const enc=encodeRoute(start,stops);
+    if(!enc)return;
+    const url=`${window.location.origin}${window.location.pathname}?route=${enc}`;
+    try{await navigator.clipboard.writeText(url);flash(t.msgLinkCopied)}catch{flash(url)}
   };
 
-  const handleExcel = async () => {
-    if (!segments.length) return;
+  const handleSaveFav=()=>{
+    const name=favName.trim()||`traseu-${new Date().toISOString().slice(0,16).replace('T','-').replace(':','')}`;
+    saveFavs({...favorites,[name]:{start:{text:start.text,display:start.display},stops:stops.map(s=>({text:s.text,display:s.display}))}});
+    setFavName('');flash(t.msgFavSaved(name));
+  };
+  const handleLoadFav=name=>{
+    const p=favorites[name];if(!p)return;
+    setStart({text:p.start.display||p.start.text,lat:null,lon:null,display:p.start.display||p.start.text});
+    setStops((p.stops||[]).map(s=>({id:uid(),text:s.display||s.text,lat:null,lon:null,display:s.display||s.text})));
+    setSegments([]);setSegOpts([]);setTab('route');
+  };
+  const handleDeleteFav=name=>{const c={...favorites};delete c[name];saveFavs(c)};
+  const handleExportFavs=()=>{const blob=new Blob([JSON.stringify(favorites,null,2)],{type:'application/json'});_downloadBlob(blob,'favorite_trasee.json')};
+  const handleImportFavs=e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{try{const obj=JSON.parse(ev.target.result);if(typeof obj==='object'){saveFavs({...favorites,...obj});flash(t.msgImported)}}catch{flash(t.msgInvalidFile)}};reader.readAsText(file);e.target.value=''};
+
+  // Monthly report
+  const months=[...new Set(history.map(h=>h.date.slice(0,7)))].sort().reverse();
+  const filteredHist=selMonth?history.filter(h=>h.date.startsWith(selMonth)):[];
+  const monthlyRows=filteredHist.flatMap(h=>(h.segments||[]).map((seg,i)=>{
+    const opt=(h.segOpts||[])[i]||{roundTrip:false,reps:1,purpose:''};
+    const km=kmRound(seg.km_oneway*(opt.roundTrip?2:1)*opt.reps);
+    return{[t.colDate]:fmtDate(h.date),[t.colFrom]:seg.from,[t.colTo]:seg.to,[t.colPurpose]:opt.purpose||'',[t.colRoundTrip]:opt.roundTrip?t.yes:t.no,[t.colReps]:opt.reps,[t.colKm]:km};
+  }));
+  const monthlyTotal=filteredHist.reduce((s,h)=>s+(h.total_km||0),0);
+
+  const handleMonthlyExcel=async()=>{
+    if(!monthlyRows.length)return;
     setExporting(true);
-    try {
-      await apiExportExcel(buildRows(), total, dateStr);
-      setMsg(t.msgExcel);
-      setTimeout(() => setMsg(''), 3000);
-    } catch (e) {
-      setMsg('Eroare: ' + e.message);
-    }
+    try{await apiExportExcel(monthlyRows,monthlyTotal,selMonth.replace('-',''),t.colTotal);flash(t.msgExcel)}catch(e){flash('Eroare: '+e.message)}
     setExporting(false);
   };
 
-  const handleSaveFav = () => {
-    const name = favName.trim() || `traseu-${new Date().toISOString().slice(0,16).replace('T','-').replace(':','')}`;
-    const payload = {
-      start: { text: start.text, display: start.display },
-      stops: stops.map(s => ({ text: s.text, display: s.display })),
-    };
-    saveFavs({ ...favorites, [name]: payload });
-    setFavName('');
-    setMsg(t.msgFavSaved(name));
-    setTimeout(() => setMsg(''), 3000);
-  };
+  const favList=Object.keys(favorites);
+  const isErr=m=>m.startsWith('Eroare')||m.includes('invalid')||m.includes('Invalid');
 
-  const handleLoadFav = (name) => {
-    const p = favorites[name];
-    if (!p) return;
-    setStart({ text: p.start.display || p.start.text, lat: null, lon: null, display: p.start.display || p.start.text });
-    setStops((p.stops || []).map(s => ({ id: uid(), text: s.display || s.text, lat: null, lon: null, display: s.display || s.text })));
-    setSegments([]);
-    setSegOpts([]);
-    setTab('route');
-  };
-
-  const handleDeleteFav = (name) => {
-    const copy = { ...favorites };
-    delete copy[name];
-    saveFavs(copy);
-  };
-
-  const handleExportFavs = () => {
-    const blob = new Blob([JSON.stringify(favorites, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'favorite_trasee.json'; a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportFavs = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const obj = JSON.parse(ev.target.result);
-        if (typeof obj === 'object') {
-          saveFavs({ ...favorites, ...obj });
-          setMsg(t.msgImported);
-          setTimeout(() => setMsg(''), 3000);
-        }
-      } catch {
-        setMsg(t.msgInvalidFile);
-        setTimeout(() => setMsg(''), 3000);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const favList = Object.keys(favorites);
-
-  return (
+  return(
     <div className="view">
-      {msg && <div className={`alert ${msg.startsWith('Eroare') || msg.includes('invalid') ? 'alert-error' : 'alert-success'}`}>{msg}</div>}
+      {msg&&<div className={`alert ${isErr(msg)?'alert-error':'alert-success'}`}>{msg}</div>}
 
-      {segments.length > 0 && (
-        <>
-          <div className="total-hero">
-            <div className="total-hero-content">
-              <div>
-                <div className="total-label">{t.totalCalculated}</div>
-                <div>
-                  <span className="total-value">{kmRound(total).toFixed(1)}</span>
-                  <span className="total-unit">km</span>
-                </div>
-              </div>
+      {segments.length>0&&(<>
+        <div className="total-hero">
+          <div className="total-hero-content">
+            <div>
+              <div className="total-label">{t.totalCalculated}</div>
+              <div><span className="total-value">{kmRound(total).toFixed(1)}</span><span className="total-unit">km</span></div>
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              <button className="theme-toggle" onClick={handleShare} title={t.btnShareRoute}><Icon name="share" size={17}/></button>
               <div className="total-hero-icon"><Icon name="download" size={24}/></div>
             </div>
           </div>
+        </div>
 
-          <div className="card">
-            <div className="card-title"><span className="card-title-dot"/>{t.sectionDownload}</div>
-            <div className="export-grid">
-              <button className="btn btn-outline" onClick={handleCSV}>
-                <Icon name="file" size={16}/> {t.btnCSV}
-              </button>
-              <button className="btn btn-outline" onClick={handleExcel} disabled={exporting}>
-                {exporting ? '...' : (<><Icon name="sheet" size={16}/> {t.btnExcel}</>)}
-              </button>
-            </div>
+        <div className="card">
+          <div className="card-title"><span className="card-title-dot"/>{t.sectionDownload}</div>
+          <div className="export-grid-3">
+            <button className="btn btn-outline" onClick={handleCSV}><Icon name="file" size={16}/>{t.btnCSV}</button>
+            <button className="btn btn-outline" onClick={handleExcel} disabled={exporting}>{exporting?'...': <><Icon name="sheet" size={16}/>{t.btnExcel}</>}</button>
+            <button className="btn btn-outline" onClick={handlePDF} disabled={exporting}>{exporting?'...':<><Icon name="file" size={16}/>{t.btnPDF}</>}</button>
           </div>
-        </>
-      )}
+        </div>
+      </>)}
+
+      <div className="card">
+        <div className="card-title"><span className="card-title-dot"/>{t.sectionMonthly}</div>
+        <div className="field" style={{marginBottom:10}}>
+          <select value={selMonth} onChange={e=>setSelMonth(e.target.value)}>
+            <option value="">{t.selectMonth}</option>
+            {months.map(m=><option key={m} value={m}>{fmtMonth(m)}</option>)}
+          </select>
+        </div>
+        {selMonth&&<div style={{fontSize:13,color:'var(--text-3)',marginBottom:10}}>{filteredHist.length} {t.tripsCount} · {kmRound(monthlyTotal).toFixed(1)} km</div>}
+        <button className="btn btn-outline btn-sm" onClick={handleMonthlyExcel} disabled={!selMonth||!monthlyRows.length||exporting}>
+          <Icon name="sheet" size={14}/>{t.btnMonthlyReport}
+        </button>
+      </div>
 
       <div className="card">
         <div className="card-title"><span className="card-title-dot"/>{t.sectionFavorites}</div>
-
-        {segments.length > 0 && (
-          <>
-            <div className="field">
-              <label>{t.labelFavName}</label>
-              <input type="text" value={favName} onChange={e => setFavName(e.target.value)} placeholder={t.placeholderFavName} />
+        {segments.length>0&&(<>
+          <div className="field"><label>{t.labelFavName}</label><input type="text" value={favName} onChange={e=>setFavName(e.target.value)} placeholder={t.placeholderFavName}/></div>
+          <button className="btn btn-outline btn-sm" onClick={handleSaveFav} style={{marginBottom:12}}><Icon name="star" size={14}/>{t.btnSaveFav}</button>
+        </>)}
+        {favList.length>0?(<>
+          {segments.length>0&&<div className="divider"/>}
+          {favList.map(name=>(
+            <div key={name} className="fav-item">
+              <div className="fav-info"><div className="fav-name">{name}</div><div className="fav-stops">{favorites[name].start?.display?.slice(0,50)||'—'}</div></div>
+              <button className="btn btn-outline btn-sm" style={{width:'auto'}} onClick={()=>handleLoadFav(name)}>{t.btnLoad}</button>
+              <button className="btn-icon danger" onClick={()=>handleDeleteFav(name)}><Icon name="x" size={14}/></button>
             </div>
-            <button className="btn btn-outline btn-sm" onClick={handleSaveFav} style={{ marginBottom: 12 }}>
-              <Icon name="star" size={14}/> {t.btnSaveFav}
-            </button>
-          </>
-        )}
-
-        {favList.length > 0 ? (
-          <>
-            {segments.length > 0 && <div className="divider" />}
-            {favList.map(name => (
-              <div key={name} className="fav-item">
-                <div className="fav-info">
-                  <div className="fav-name">{name}</div>
-                  <div className="fav-stops">{favorites[name].start?.display?.slice(0, 50) || '—'}</div>
-                </div>
-                <button className="btn btn-outline btn-sm" style={{ width: 'auto' }} onClick={() => handleLoadFav(name)}>{t.btnLoad}</button>
-                <button className="btn-icon danger" onClick={() => handleDeleteFav(name)} aria-label="Șterge"><Icon name="x" size={14}/></button>
-              </div>
-            ))}
-            <div className="divider" />
-            <div className="export-grid">
-              <button className="btn btn-outline btn-sm" onClick={handleExportFavs}>
-                <Icon name="download" size={14}/> {t.btnExportFav}
-              </button>
-              <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
-                <Icon name="upload" size={14}/> {t.btnImportFav}
-                <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportFavs} />
-              </label>
-            </div>
-          </>
-        ) : segments.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-3)', fontSize: 14 }}>
-            {t.noFavorites}
+          ))}
+          <div className="divider"/>
+          <div className="export-grid">
+            <button className="btn btn-outline btn-sm" onClick={handleExportFavs}><Icon name="download" size={14}/>{t.btnExportFav}</button>
+            <label className="btn btn-outline btn-sm" style={{cursor:'pointer'}}><Icon name="upload" size={14}/>{t.btnImportFav}<input type="file" accept=".json" style={{display:'none'}} onChange={handleImportFavs}/></label>
           </div>
-        ) : null}
+        </>):segments.length===0?(<div style={{textAlign:'center',padding:'20px 0',color:'var(--text-3)',fontSize:14}}>{t.noFavorites}</div>):null}
       </div>
 
-      {segments.length === 0 && favList.length === 0 && (
+      {segments.length===0&&favList.length===0&&(
         <div className="empty-state">
           <div className="empty-icon"><Icon name="download" size={32}/></div>
           <div className="empty-title">{t.emptyExportTitle}</div>
           <div className="empty-sub">{t.emptyExportSub}</div>
-          <div style={{ marginTop: 22 }}>
-            <button className="btn btn-outline" style={{ width: 'auto', padding: '0 28px' }} onClick={() => setTab('route')}>
-              {t.goToRoute}
-            </button>
-          </div>
+          <div style={{marginTop:22}}><button className="btn btn-outline" style={{width:'auto',padding:'0 28px'}} onClick={()=>setTab('route')}>{t.goToRoute}</button></div>
         </div>
       )}
     </div>
   );
 }
 
-function App() {
-  const [theme, setTheme] = useState(getInitialTheme);
-  const [lang, setLang] = useState(getInitialLang);
-  const t = TRANSLATIONS[lang];
-  const toggleLang = () => {
-    const next = lang === 'en' ? 'ro' : 'en';
-    setLang(next);
-    localStorage.setItem('fp_lang', next);
-  };
-  const [tab, setTab] = useState('route');
-  const [date, setDate] = useState(today);
-  const [start, setStart] = useState({ text: '', lat: null, lon: null, display: '' });
-  const [stops, setStops] = useState([{ id: uid(), text: '', lat: null, lon: null, display: '' }]);
-  const [closeLoop, setCloseLoop] = useState(false);
-  const [segments, setSegments] = useState([]);
-  const [segOpts, setSegOpts] = useState([]);
-  const [calculating, setCalculating] = useState(false);
-  const [error, setError] = useState('');
+// ── HistoryView ───────────────────────────────────────────────────────────────
+function HistoryView({vehicles,setTab,t}){
+  const[history,setHistory]=useState(loadHistory);
+  const[filterMonth,setFilterMonth]=useState('');
+  const[expanded,setExpanded]=useState({});
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('fp_theme', theme);
-  }, [theme]);
+  const months=[...new Set(history.map(h=>h.date.slice(0,7)))].sort().reverse();
+  const filtered=filterMonth?history.filter(h=>h.date.startsWith(filterMonth)):history;
+  const sorted=[...filtered].sort((a,b)=>b.date.localeCompare(a.date));
 
-  const resolveAddr = async (addr) => {
-    if (addr.lat && addr.lon) return addr;
-    if (!addr.text || addr.text.length < 3) return null;
-    const results = await apiGeocode(addr.text);
-    if (!results.length) return null;
-    return { ...addr, lat: results[0].lat, lon: results[0].lon, display: results[0].display };
+  const totalKm=sorted.reduce((s,h)=>s+(h.total_km||0),0);
+  const totalCost=sorted.reduce((s,h)=>s+(h.total_cost||0),0);
+
+  const deleteTrip=id=>{
+    const h=history.filter(x=>x.id!==id);
+    saveHistory(h);setHistory(h);
   };
 
-  const handleCalculate = async () => {
-    setError('');
-    setCalculating(true);
-    try {
-      const resolvedStart = await resolveAddr(start);
-      if (!resolvedStart) { setError(t.errNoStart); setCalculating(false); return; }
-      const resolvedStops = [];
-      for (const s of stops) {
-        const r = await resolveAddr(s);
-        if (!r) { setError(t.errNoStop(s.text || '?')); setCalculating(false); return; }
-        resolvedStops.push(r);
-      }
-      setStart(resolvedStart);
-      setStops(resolvedStops);
-      const pts = [resolvedStart, ...resolvedStops];
-      if (closeLoop) pts.push(resolvedStart);
-      const data = await apiRoute(pts.map(p => [p.lat, p.lon]));
-      const segs = data.legs_km.map((km, i) => ({
-        from: pts[i].display,
-        to: pts[i + 1].display,
-        km_oneway: km,
-      }));
+  const toggle=id=>setExpanded(p=>({...p,[id]:!p[id]}));
+
+  if(!history.length){
+    return(
+      <div className="view">
+        <div className="empty-state">
+          <div className="empty-icon"><Icon name="clock" size={32}/></div>
+          <div className="empty-title">{t.emptyHistoryTitle}</div>
+          <div className="empty-sub">{t.emptyHistorySub}</div>
+          <div style={{marginTop:22}}><button className="btn btn-outline" style={{width:'auto',padding:'0 28px'}} onClick={()=>setTab('route')}>{t.goToRoute}</button></div>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div className="view">
+      <div className="card" style={{marginBottom:14}}>
+        <div className="field" style={{marginBottom:0}}>
+          <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)}>
+            <option value="">{t.allMonths}</option>
+            {months.map(m=><option key={m} value={m}>{fmtMonth(m)}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-box"><div className="stat-box-val">{sorted.length}</div><div className="stat-box-lbl">{t.tripsCount}</div></div>
+        <div className="stat-box"><div className="stat-box-val">{kmRound(totalKm).toFixed(1)}</div><div className="stat-box-lbl">{t.historyTotalKm}</div></div>
+        <div className="stat-box"><div className="stat-box-val">{totalCost>0?totalCost.toFixed(0)+'':'—'}</div><div className="stat-box-lbl">{t.historyTotalCost}</div></div>
+      </div>
+
+      {sorted.map(h=>(
+        <div key={h.id} className="history-item">
+          <div className="history-header" onClick={()=>toggle(h.id)}>
+            <div style={{flex:1,minWidth:0}}>
+              <div className="history-date">{fmtDate(h.date)}</div>
+              <div className="history-vehicle">{[h.vehicleName,h.driver].filter(Boolean).join(' · ')||'—'}</div>
+            </div>
+            <div style={{textAlign:'right',marginRight:10}}>
+              <div className="history-km">{(h.total_km||0).toFixed(1)} km</div>
+              {h.total_cost>0&&<div className="history-cost">{h.total_cost.toFixed(2)} RON</div>}
+            </div>
+            <Icon name={expanded[h.id]?'chevronUp':'chevronDown'} size={16}/>
+          </div>
+          {expanded[h.id]&&(
+            <div className="history-body">
+              {(h.segments||[]).map((seg,i)=>{
+                const opt=(h.segOpts||[])[i]||{roundTrip:false,reps:1,purpose:''};
+                const km=kmRound(seg.km_oneway*(opt.roundTrip?2:1)*opt.reps);
+                return(
+                  <div key={i} className="history-seg">
+                    <div style={{flex:1,minWidth:0}}>
+                      <div>{seg.from} → {seg.to}</div>
+                      {opt.purpose&&<div className="history-purpose">{opt.purpose}</div>}
+                    </div>
+                    <div style={{fontWeight:700,color:'var(--accent)',marginLeft:12,whiteSpace:'nowrap'}}>{km.toFixed(1)} km</div>
+                  </div>
+                );
+              })}
+              {(h.odoStart||h.odoEnd)&&(
+                <div style={{fontSize:12,color:'var(--text-3)',marginTop:8}}>
+                  Odometru: {h.odoStart||'—'} → {h.odoEnd||'—'} km
+                </div>
+              )}
+              <div className="history-actions">
+                <button className="btn-icon danger" onClick={()=>deleteTrip(h.id)}><Icon name="trash" size={14}/></button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      <div style={{height:8}}/>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
+function App(){
+  const[theme,setTheme]=useState(getInitialTheme);
+  const[lang,setLang]=useState(getInitialLang);
+  const t=TRANSLATIONS[lang];
+
+  const toggleLang=()=>{const n=lang==='en'?'ro':'en';setLang(n);localStorage.setItem('fp_lang',n)};
+
+  const[tab,setTab]=useState('route');
+  const[date,setDate]=useState(today);
+  const[start,setStart]=useState({text:'',lat:null,lon:null,display:''});
+  const[stops,setStops]=useState([{id:uid(),text:'',lat:null,lon:null,display:''}]);
+  const[closeLoop,setCloseLoop]=useState(false);
+  const[odoStart,setOdoStart]=useState('');
+  const[odoEnd,setOdoEnd]=useState('');
+  const[segments,setSegments]=useState([]);
+  const[segOpts,setSegOpts]=useState([]);
+  const[coords,setCoords]=useState([]);
+  const[calculating,setCalculating]=useState(false);
+  const[error,setError]=useState('');
+  const[vehicles,setVehicles]=useState(loadVehicles);
+  const[selectedVehicleId,setSelectedVehicleId]=useState('');
+  const[showVehicleModal,setShowVehicleModal]=useState(false);
+  const[flashMsg,setFlashMsg]=useState('');
+
+  useEffect(()=>{document.documentElement.setAttribute('data-theme',theme);localStorage.setItem('fp_theme',theme)},[theme]);
+
+  // Save vehicles to storage whenever they change
+  useEffect(()=>{saveVehicles(vehicles)},[vehicles]);
+
+  // Pre-populate from shared URL
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const enc=params.get('route');
+    if(!enc)return;
+    const data=decodeRoute(enc);
+    if(!data)return;
+    if(data.s){setStart({text:data.s.d||data.s.t,lat:null,lon:null,display:data.s.d||data.s.t})}
+    if(data.o&&data.o.length){setStops(data.o.map(s=>({id:uid(),text:s.d||s.t,lat:null,lon:null,display:s.d||s.t})))}
+    history.replaceState({},'',window.location.pathname);
+  },[]);
+
+  const resolveAddr=async addr=>{
+    if(addr.lat&&addr.lon)return addr;
+    if(!addr.text||addr.text.length<3)return null;
+    const results=await apiGeocode(addr.text);
+    if(!results.length)return null;
+    return{...addr,lat:results[0].lat,lon:results[0].lon,display:results[0].display};
+  };
+
+  const handleCalculate=async()=>{
+    setError('');setCalculating(true);
+    try{
+      const resolvedStart=await resolveAddr(start);
+      if(!resolvedStart){setError(t.errNoStart);setCalculating(false);return}
+      const resolvedStops=[];
+      for(const s of stops){const r=await resolveAddr(s);if(!r){setError(t.errNoStop(s.text||'?'));setCalculating(false);return}resolvedStops.push(r)}
+      setStart(resolvedStart);setStops(resolvedStops);
+      const pts=[resolvedStart,...resolvedStops];
+      if(closeLoop)pts.push(resolvedStart);
+      const data=await apiRoute(pts.map(p=>[p.lat,p.lon]));
+      const segs=data.legs_km.map((km,i)=>({from:pts[i].display,to:pts[i+1].display,km_oneway:km}));
       setSegments(segs);
-      setSegOpts(segs.map(() => ({ roundTrip: false, reps: 1 })));
+      setSegOpts(segs.map(()=>({roundTrip:false,reps:1,purpose:''})));
+      setCoords(data.coords||[]);
       setTab('segments');
-    } catch (e) {
-      setError(e.message || t.errUnexpected);
-    }
+    }catch(e){setError(e.message||t.errUnexpected)}
     setCalculating(false);
   };
 
-  return (
+  const handleSaveHistory=()=>{
+    const vehicle=vehicles.find(v=>v.id===selectedVehicleId)||null;
+    const total=segments.reduce((sum,seg,i)=>{const opt=segOpts[i]||{roundTrip:false,reps:1};return sum+kmRound(seg.km_oneway*(opt.roundTrip?2:1)*opt.reps)},0);
+    let totalCost=0;
+    if(vehicle&&vehicle.consumption&&vehicle.fuelPrice){
+      totalCost=kmRound(total*parseFloat(vehicle.consumption)/100*parseFloat(vehicle.fuelPrice));
+    }
+    const entry={
+      id:uid(),date,
+      vehicleId:vehicle?.id||'',
+      vehicleName:vehicle?`${vehicle.name}${vehicle.plate?' '+vehicle.plate:''}`.trim():'',
+      driver:vehicle?.driver||'',
+      odoStart,odoEnd,segments,segOpts,
+      total_km:kmRound(total),
+      total_cost:totalCost,
+      savedAt:new Date().toISOString(),
+    };
+    const h=[entry,...loadHistory()];
+    saveHistory(h);
+    setFlashMsg(t.msgTripSaved);
+    setTimeout(()=>setFlashMsg(''),3000);
+  };
+
+  return(
     <>
       <div className="header">
         <div className="logo-wrap">
@@ -1357,106 +1115,66 @@ function App() {
           </div>
         </div>
         <div className="header-actions">
-          {segments.length > 0 && (
-            <span className="badge"><span className="badge-dot"/>{t.badgeCalculated}</span>
-          )}
-          <button
-            className="theme-toggle"
-            onClick={toggleLang}
-            aria-label="Switch language"
-            title={lang === 'en' ? 'Switch to Romanian' : 'Switch to English'}
-            style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, width: 'auto', padding: '0 10px', minWidth: 38 }}
-          >
-            {lang === 'en' ? 'RO' : 'EN'}
-          </button>
-          <button
-            className="theme-toggle"
-            onClick={() => setTheme(th => th === 'dark' ? 'light' : 'dark')}
-            aria-label="Toggle theme"
-            title={theme === 'dark' ? t.themeLight : t.themeDark}
-          >
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17}/>
-          </button>
+          {segments.length>0&&<span className="badge"><span className="badge-dot"/>Calculat</span>}
+          <button className="theme-toggle" onClick={()=>setShowVehicleModal(true)} title={t.vehiclesTitle}><Icon name="settings" size={17}/></button>
+          <button className="theme-toggle" onClick={toggleLang} style={{fontSize:12,fontWeight:700,width:'auto',padding:'0 10px',minWidth:38}}>{lang==='en'?'RO':'EN'}</button>
+          <button className="theme-toggle" onClick={()=>setTheme(th=>th==='dark'?'light':'dark')} title={theme==='dark'?t.themeLight:t.themeDark}><Icon name={theme==='dark'?'sun':'moon'} size={17}/></button>
         </div>
       </div>
 
-      {calculating && (
-        <div className="loader-overlay">
-          <div className="loader-big" />
-          <div className="loader-text">{t.loaderText}</div>
-        </div>
-      )}
+      {calculating&&<div className="loader-overlay"><div className="loader-big"/><div className="loader-text">{t.loaderText}</div></div>}
+      {showVehicleModal&&<VehicleModal vehicles={vehicles} onSave={setVehicles} onClose={()=>setShowVehicleModal(false)} t={t}/>}
 
       <div className="main">
-        {error && (
-          <div style={{ padding: '18px 16px 0', maxWidth: 680, margin: '0 auto' }}>
-            <div className="alert alert-error">{error}</div>
+        {(error||flashMsg)&&(
+          <div style={{padding:'18px 16px 0',maxWidth:680,margin:'0 auto'}}>
+            {error&&<div className="alert alert-error">{error}</div>}
+            {flashMsg&&<div className="alert alert-success">{flashMsg}</div>}
           </div>
         )}
 
-        {tab === 'route' && (
-          <RouteView
-            date={date} setDate={setDate}
-            start={start} setStart={setStart}
-            stops={stops} setStops={setStops}
-            closeLoop={closeLoop} setCloseLoop={setCloseLoop}
-            onCalculate={handleCalculate}
-            calculating={calculating}
-            t={t}
-          />
-        )}
-        {tab === 'segments' && (
-          <SegmentsView
-            segments={segments}
-            segOpts={segOpts}
-            setSegOpts={setSegOpts}
-            onGoRoute={() => setTab('route')}
-            t={t}
-          />
-        )}
-        {tab === 'export' && (
-          <ExportView
-            segments={segments}
-            segOpts={segOpts}
-            date={date}
-            start={start}
-            stops={stops}
-            setStart={setStart}
-            setStops={setStops}
-            setSegments={setSegments}
-            setSegOpts={setSegOpts}
-            setTab={setTab}
-            t={t}
-          />
-        )}
+        {/* Map is always mounted but shown/hidden */}
+        <MapView coords={coords} segments={segments} isActive={tab==='map'} t={t}/>
+
+        {tab==='route'&&<RouteView date={date} setDate={setDate} start={start} setStart={setStart} stops={stops} setStops={setStops} closeLoop={closeLoop} setCloseLoop={setCloseLoop} odoStart={odoStart} setOdoStart={setOdoStart} odoEnd={odoEnd} setOdoEnd={setOdoEnd} vehicles={vehicles} selectedVehicleId={selectedVehicleId} setSelectedVehicleId={setSelectedVehicleId} onCalculate={handleCalculate} calculating={calculating} t={t}/>}
+        {tab==='segments'&&<SegmentsView segments={segments} segOpts={segOpts} setSegOpts={setSegOpts} vehicles={vehicles} selectedVehicleId={selectedVehicleId} onGoRoute={()=>setTab('route')} onSaveHistory={handleSaveHistory} t={t}/>}
+        {tab==='export'&&<ExportView segments={segments} segOpts={segOpts} date={date} start={start} stops={stops} vehicles={vehicles} selectedVehicleId={selectedVehicleId} setStart={setStart} setStops={setStops} setSegments={setSegments} setSegOpts={setSegOpts} setTab={setTab} t={t} lang={lang}/>}
+        {tab==='history'&&<HistoryView vehicles={vehicles} setTab={setTab} t={t}/>}
       </div>
 
       <nav className="bottom-nav">
-        <button className={`nav-tab ${tab === 'route' ? 'active' : ''}`} onClick={() => setTab('route')}>
-          <span className="nav-icon"><Icon name="map" size={20}/></span>
+        <button className={`nav-tab ${tab==='route'?'active':''}`} onClick={()=>setTab('route')}>
+          <span className="nav-icon"><Icon name="map" size={19}/></span>
           <span className="nav-label">{t.tabRoute}</span>
         </button>
-        <button className={`nav-tab ${tab === 'segments' ? 'active' : ''}`} onClick={() => setTab('segments')}>
-          <span className="nav-icon"><Icon name="list" size={20}/></span>
+        <button className={`nav-tab ${tab==='map'?'active':''}`} onClick={()=>setTab('map')}>
+          <span className="nav-icon"><Icon name="pin" size={19}/></span>
+          <span className="nav-label">{t.tabMap}</span>
+        </button>
+        <button className={`nav-tab ${tab==='segments'?'active':''}`} onClick={()=>setTab('segments')}>
+          <span className="nav-icon"><Icon name="list" size={19}/></span>
           <span className="nav-label">{t.tabSegments}</span>
         </button>
-        <button className={`nav-tab ${tab === 'export' ? 'active' : ''}`} onClick={() => setTab('export')}>
-          <span className="nav-icon"><Icon name="download" size={20}/></span>
+        <button className={`nav-tab ${tab==='export'?'active':''}`} onClick={()=>setTab('export')}>
+          <span className="nav-icon"><Icon name="download" size={19}/></span>
           <span className="nav-label">{t.tabExport}</span>
+        </button>
+        <button className={`nav-tab ${tab==='history'?'active':''}`} onClick={()=>setTab('history')}>
+          <span className="nav-icon"><Icon name="clock" size={19}/></span>
+          <span className="nav-label">{t.tabHistory}</span>
         </button>
       </nav>
     </>
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 
-// Înregistrare Service Worker (PWA)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
     navigator.serviceWorker.register('/static/sw.js')
-      .then(reg => console.log('SW înregistrat:', reg.scope))
-      .catch(err => console.warn('SW eșuat:', err));
+      .then(r=>console.log('SW:',r.scope))
+      .catch(e=>console.warn('SW fail:',e));
   });
 }
 </script>

@@ -1,141 +1,174 @@
 from __future__ import annotations
-import io, math, os
+import io, math, os, json
 from typing import List, Tuple, Dict, Optional
+from contextlib import asynccontextmanager
 
-import requests
-from fastapi import FastAPI, Query, HTTPException
+import httpx
+import aiosqlite
+from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, Response as FastAPIResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
 import pandas as pd
 
-app = FastAPI(title="Foaie de parcurs")
+LOCATIONIQ_KEY  = os.getenv("LOCATIONIQ_KEY", "") or os.getenv("LOCATIONIQ_TOKEN", "")
+CONTACT_EMAIL   = os.getenv("CONTACT_EMAIL", "")
+USER_AGENT      = f"TripLogApp/9.0 (contact:{CONTACT_EMAIL or 'none'})"
+DB_PATH         = os.getenv("CACHE_DB", "cache.db")
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",")]
+
+limiter = Limiter(key_func=get_remote_address)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("CREATE TABLE IF NOT EXISTS geo_cache   (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        await db.execute("CREATE TABLE IF NOT EXISTS route_cache (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        await db.commit()
+    yield
+
+
+app = FastAPI(title="TripLog", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-LOCATIONIQ_KEY = os.getenv("LOCATIONIQ_KEY", "") or os.getenv("LOCATIONIQ_TOKEN", "")
-CONTACT_EMAIL  = os.getenv("CONTACT_EMAIL", "")
-USER_AGENT     = f"FoaieParcursApp/8.0 (contact:{CONTACT_EMAIL or 'none'})"
-
-# Cache in-memory simplu (per proces, se pierde la restart - acceptabil)
-_geo_cache: Dict[str, list] = {}
-_rte_cache: Dict[str, dict] = {}
-
 
 def km_round(x: float) -> float:
-    """Rotunjire aritmetică standard (evită banker's rounding din Python)."""
     return math.floor(x * 10 + 0.5) / 10
 
 
-# ---- Geocodare ----
+# ── Geocodare ────────────────────────────────────────────────────────────────
 
-def _try_locationiq(q: str, limit: int) -> Optional[list]:
+async def _try_locationiq(client: httpx.AsyncClient, q: str, limit: int) -> Optional[list]:
     if not LOCATIONIQ_KEY:
         return None
     try:
-        r = requests.get(
+        r = await client.get(
             "https://us1.locationiq.com/v1/search",
             params={"key": LOCATIONIQ_KEY, "q": q, "format": "json",
                     "normalizecity": 1, "limit": str(limit), "accept-language": "ro"},
-            headers={"User-Agent": USER_AGENT},
-            timeout=10,
         )
         r.raise_for_status()
         js = r.json()
-        if not isinstance(js, list):
-            return None
-        return [{"lat": float(it["lat"]), "lon": float(it["lon"]),
-                 "display": it.get("display_name", q)} for it in js]
+        return ([{"lat": float(it["lat"]), "lon": float(it["lon"]),
+                  "display": it.get("display_name", q)} for it in js]
+                if isinstance(js, list) else None)
     except Exception:
         return None
 
 
-def _try_nominatim(q: str, limit: int) -> Optional[list]:
+async def _try_nominatim(client: httpx.AsyncClient, q: str, limit: int) -> Optional[list]:
     try:
-        r = requests.get(
+        r = await client.get(
             "https://nominatim.openstreetmap.org/search",
             params={"q": q, "format": "json", "limit": limit, "accept-language": "ro"},
-            headers={"User-Agent": USER_AGENT},
-            timeout=10,
         )
         r.raise_for_status()
         js = r.json()
-        if not isinstance(js, list):
-            return None
-        return [{"lat": float(it["lat"]), "lon": float(it["lon"]),
-                 "display": it.get("display_name", q)} for it in js]
+        return ([{"lat": float(it["lat"]), "lon": float(it["lon"]),
+                  "display": it.get("display_name", q)} for it in js]
+                if isinstance(js, list) else None)
     except Exception:
         return None
 
 
-def _try_mapsco(q: str, limit: int) -> Optional[list]:
+async def _try_mapsco(client: httpx.AsyncClient, q: str, limit: int) -> Optional[list]:
     try:
-        r = requests.get(
-            "https://geocode.maps.co/search",
-            params={"q": q, "limit": str(limit)},
-            headers={"User-Agent": USER_AGENT},
-            timeout=10,
-        )
+        r = await client.get("https://geocode.maps.co/search",
+                             params={"q": q, "limit": str(limit)})
         r.raise_for_status()
         js = r.json()
         if not isinstance(js, list):
             return None
-        out = []
-        for it in js:
-            if it.get("lat") and it.get("lon"):
-                out.append({
-                    "lat": float(it["lat"]),
-                    "lon": float(it["lon"]),
-                    "display": it.get("display_name") or it.get("name") or q,
-                })
-        return out or None
+        return ([{"lat": float(it["lat"]), "lon": float(it["lon"]),
+                  "display": it.get("display_name") or it.get("name") or q}
+                 for it in js if it.get("lat") and it.get("lon")] or None)
     except Exception:
         return None
 
 
 @app.get("/api/geocode")
-async def geocode(q: str = Query(..., min_length=3), limit: int = Query(6, ge=1, le=10)):
+@limiter.limit("30/minute")
+async def geocode(request: Request,
+                  q: str = Query(..., min_length=3),
+                  limit: int = Query(6, ge=1, le=10)):
     key = f"{q}|{limit}"
-    if key in _geo_cache:
-        return {"results": _geo_cache[key]}
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT value FROM geo_cache WHERE key=?", (key,)) as cur:
+            row = await cur.fetchone()
+            if row:
+                return {"results": json.loads(row[0])}
 
-    result = _try_locationiq(q, limit) or _try_nominatim(q, limit) or _try_mapsco(q, limit) or []
-    _geo_cache[key] = result
+    async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, timeout=10.0) as client:
+        result = (await _try_locationiq(client, q, limit)
+                  or await _try_nominatim(client, q, limit)
+                  or await _try_mapsco(client, q, limit)
+                  or [])
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("INSERT OR REPLACE INTO geo_cache VALUES (?,?)", (key, json.dumps(result)))
+        await db.commit()
     return {"results": result}
 
 
-# ---- Rutare ----
+@app.get("/api/reverse")
+@limiter.limit("20/minute")
+async def reverse_geocode(request: Request,
+                          lat: float = Query(...),
+                          lon: float = Query(...)):
+    try:
+        async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, timeout=10.0) as client:
+            r = await client.get(
+                "https://nominatim.openstreetmap.org/reverse",
+                params={"format": "json", "lat": lat, "lon": lon, "accept-language": "ro"},
+            )
+            r.raise_for_status()
+            data = r.json()
+            return {"display": data.get("display_name", f"{lat:.5f}, {lon:.5f}"),
+                    "lat": lat, "lon": lon}
+    except Exception:
+        return {"display": f"{lat:.5f}, {lon:.5f}", "lat": lat, "lon": lon}
+
+
+# ── Rutare ───────────────────────────────────────────────────────────────────
 
 class RouteRequest(BaseModel):
     points: List[Tuple[float, float]]
 
 
 @app.post("/api/route")
-async def route(body: RouteRequest):
+@limiter.limit("20/minute")
+async def route(request: Request, body: RouteRequest):
     if len(body.points) < 2:
         raise HTTPException(400, "Minim 2 puncte necesare.")
-
     key = "|".join(f"{la:.5f},{lo:.5f}" for la, lo in body.points)
-    if key in _rte_cache:
-        return _rte_cache[key]
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT value FROM route_cache WHERE key=?", (key,)) as cur:
+            row = await cur.fetchone()
+            if row:
+                return json.loads(row[0])
 
     coord_str = ";".join(f"{lo},{la}" for la, lo in body.points)
-    url = (
-        f"https://router.project-osrm.org/route/v1/driving/{coord_str}"
-        f"?overview=full&alternatives=false&steps=false&geometries=geojson"
-    )
-
+    url = (f"https://router.project-osrm.org/route/v1/driving/{coord_str}"
+           f"?overview=full&alternatives=false&steps=false&geometries=geojson")
     try:
-        r = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=20)
+        async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, timeout=20.0) as client:
+            r = await client.get(url)
         if r.status_code == 400:
-            d = r.json()
-            raise HTTPException(400, d.get("message", "Nu s-a găsit rută."))
+            raise HTTPException(400, r.json().get("message", "Nu s-a găsit rută."))
         r.raise_for_status()
         data = r.json()
     except HTTPException:
@@ -149,19 +182,20 @@ async def route(body: RouteRequest):
 
     legs    = routes[0].get("legs", [])
     legs_km = [km_round(leg["distance"] / 1000) for leg in legs]
-
-    geom   = routes[0].get("geometry", {})
-    raw    = geom.get("coordinates", []) if geom.get("type") == "LineString" else []
-    coords = raw[::3]
+    geom    = routes[0].get("geometry", {})
+    raw     = geom.get("coordinates", []) if geom.get("type") == "LineString" else []
+    coords  = raw[::3]
     if raw and (not coords or coords[-1] != raw[-1]):
         coords.append(raw[-1])
 
     result = {"legs_km": legs_km, "coords": coords}
-    _rte_cache[key] = result
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("INSERT OR REPLACE INTO route_cache VALUES (?,?)", (key, json.dumps(result)))
+        await db.commit()
     return result
 
 
-# ---- Export Excel ----
+# ── Export Excel ─────────────────────────────────────────────────────────────
 
 class ExportRequest(BaseModel):
     rows: List[Dict]
@@ -175,33 +209,115 @@ async def export_excel(body: ExportRequest):
     df  = pd.DataFrame(body.rows)
     bio = io.BytesIO()
     try:
-        from openpyxl.styles import Font
+        from openpyxl.styles import Font, PatternFill, Alignment
         from openpyxl.utils import get_column_letter
         with pd.ExcelWriter(bio, engine="openpyxl") as w:
-            df.to_excel(w, index=False, header=False,
-                        sheet_name="Foaie de parcurs", startrow=1)
-            ws = w.sheets["Foaie de parcurs"]
+            df.to_excel(w, index=False, header=False, sheet_name="Foaie de parcurs", startrow=1)
+            ws   = w.sheets["Foaie de parcurs"]
+            fill = PatternFill(start_color="6366F1", end_color="6366F1", fill_type="solid")
+            hf   = Font(bold=True, color="FFFFFF", size=11)
+            ca   = Alignment(horizontal="center", vertical="center")
             for i, col in enumerate(df.columns, 1):
-                ws.cell(1, i, col).font = Font(bold=True)
+                c = ws.cell(1, i, col); c.font = hf; c.fill = fill; c.alignment = ca
             tc = df.shape[1] + 1
-            ws.cell(1, tc, body.total_col_label).font = Font(bold=True)
-            ws.cell(2, tc, float(body.total)).font = Font(bold=True)
-            ws.cell(2, tc).number_format = "0.0"
-            ws.column_dimensions[get_column_letter(tc)].width = 15
+            th = ws.cell(1, tc, body.total_col_label); th.font = hf; th.fill = fill; th.alignment = ca
+            tv = ws.cell(2, tc, float(body.total))
+            tv.font = Font(bold=True, size=12, color="4338CA")
+            tv.number_format = "0.0"; tv.alignment = ca
+            for ci in range(1, tc + 1):
+                mx = max((len(str(ws.cell(r, ci).value or ''))
+                          for r in range(1, ws.max_row + 1)), default=10)
+                ws.column_dimensions[get_column_letter(ci)].width = min(mx + 4, 55)
             ws.freeze_panes = "A2"
+            ws.row_dimensions[1].height = 28
+    except Exception as e:
+        raise HTTPException(500, str(e))
+    bio.seek(0)
+    return StreamingResponse(bio,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=foaie_parcurs_{body.date_str}.xlsx"})
+
+
+# ── Export PDF ────────────────────────────────────────────────────────────────
+
+class PDFRequest(BaseModel):
+    rows: List[Dict]
+    total: float
+    date_str: str
+    title: str = "Foaie de parcurs"
+    vehicle: str = ""
+    driver: str = ""
+    total_col_label: str = "Total KM"
+
+
+@app.post("/api/export/pdf")
+async def export_pdf(body: PDFRequest):
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.enums import TA_CENTER
+
+        bio = io.BytesIO()
+        doc = SimpleDocTemplate(bio, pagesize=landscape(A4),
+                                leftMargin=1.5*cm, rightMargin=1.5*cm,
+                                topMargin=1.5*cm, bottomMargin=1.5*cm)
+        styles  = getSampleStyleSheet()
+        t_style = ParagraphStyle('T', parent=styles['Title'], fontSize=16, spaceAfter=4,
+                                 alignment=TA_CENTER, textColor=colors.HexColor('#4338CA'))
+        s_style = ParagraphStyle('S', parent=styles['Normal'], fontSize=9, spaceAfter=10,
+                                 alignment=TA_CENTER, textColor=colors.HexColor('#64748B'))
+        story = [Paragraph(body.title, t_style)]
+        meta  = " | ".join(filter(None, [
+            body.vehicle and f"Vehicul: {body.vehicle}",
+            body.driver  and f"Șofer: {body.driver}",
+        ]))
+        if meta:
+            story.append(Paragraph(meta, s_style))
+        story.append(Spacer(1, 0.3*cm))
+
+        if body.rows:
+            cols   = list(body.rows[0].keys())
+            data   = [cols + [body.total_col_label]]
+            for i, row in enumerate(body.rows):
+                data.append([str(row.get(c, '')) for c in cols]
+                            + ([f"{body.total:.1f}"] if i == 0 else ['']))
+            page_w = landscape(A4)[0] - 3*cm
+            wide   = {'plecare', 'destinație', 'destinatie', 'from', 'to', 'scop', 'purpose'}
+            col_w  = [page_w * (0.22 if any(w in c.lower() for w in wide) else 0.09) for c in cols]
+            col_w.append(page_w * 0.10)
+            tbl = Table(data, colWidths=col_w, repeatRows=1)
+            tbl.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6366F1')),
+                ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
+                ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE',   (0, 0), (-1, 0), 8),
+                ('FONTSIZE',   (0, 1), (-1,-1), 7),
+                ('ALIGN',      (0, 0), (-1,-1), 'CENTER'),
+                ('VALIGN',     (0, 0), (-1,-1), 'MIDDLE'),
+                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F8FAFC')]),
+                ('GRID',       (0, 0), (-1,-1), 0.4, colors.HexColor('#E2E8F0')),
+                ('TOPPADDING',    (0,0), (-1,-1), 5),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+                ('FONTNAME',   (-1, 1), (-1, 1), 'Helvetica-Bold'),
+                ('FONTSIZE',   (-1, 1), (-1, 1), 9),
+                ('TEXTCOLOR',  (-1, 1), (-1, 1), colors.HexColor('#4338CA')),
+            ]))
+            story.append(tbl)
+
+        doc.build(story)
+        bio.seek(0)
+        return StreamingResponse(bio, media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=foaie_parcurs_{body.date_str}.pdf"})
+    except ImportError:
+        raise HTTPException(500, "reportlab nu este instalat. Rulați: pip install reportlab")
     except Exception as e:
         raise HTTPException(500, str(e))
 
-    bio.seek(0)
-    fname = f"foaie_parcurs_{body.date_str}.xlsx"
-    return StreamingResponse(
-        bio,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename={fname}"},
-    )
 
-
-# ---- Health check ----
+# ── Health / SW / Static ──────────────────────────────────────────────────────
 
 @app.get("/health")
 @app.head("/health")
@@ -209,25 +325,14 @@ async def health():
     return {"status": "ok"}
 
 
-# ---- Service Worker (trebuie servit cu header Service-Worker-Allowed) ----
-
-from fastapi.responses import Response as FastAPIResponse
-
 @app.get("/static/sw.js")
 async def service_worker():
-    with open("static/sw.js", "r") as f:
-        content = f.read()
-    return FastAPIResponse(
-        content=content,
-        media_type="application/javascript",
-        headers={"Service-Worker-Allowed": "/"},
-    )
+    with open("static/sw.js") as f:
+        return FastAPIResponse(f.read(), media_type="application/javascript",
+                               headers={"Service-Worker-Allowed": "/"})
 
-
-# ---- Static / SPA ----
 
 INDEX_PATH = os.path.join("static", "index.html")
-
 if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -239,7 +344,6 @@ async def root():
 
 @app.get("/{full_path:path}")
 async def spa(full_path: str):
-    # Nu interceptăm rutele API
     if full_path.startswith("api/"):
         raise HTTPException(404, "Not found")
     return FileResponse(INDEX_PATH)
