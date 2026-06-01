@@ -126,18 +126,51 @@ async def geocode(q: str = Query(..., min_length=3),
 @app.get("/api/reverse")
 async def reverse_geocode(lat: float = Query(...),
                           lon: float = Query(...)):
-    try:
-        async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, timeout=10.0) as client:
-            r = await client.get(
-                "https://nominatim.openstreetmap.org/reverse",
-                params={"format": "json", "lat": lat, "lon": lon, "accept-language": "ro"},
-            )
-            r.raise_for_status()
-            data = r.json()
-            return {"display": data.get("display_name", f"{lat:.5f}, {lon:.5f}"),
-                    "lat": lat, "lon": lon}
-    except Exception:
-        return {"display": f"{lat:.5f}, {lon:.5f}", "lat": lat, "lon": lon}
+    key  = f"rev|{lat:.5f},{lon:.5f}"
+    # Cache lookup
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT value FROM geo_cache WHERE key=?", (key,)) as cur:
+            row = await cur.fetchone()
+            if row:
+                return json.loads(row[0])
+
+    display = None
+    async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, timeout=10.0) as client:
+        # 1) LocationIQ (dacă există cheia)
+        if LOCATIONIQ_KEY:
+            try:
+                r = await client.get(
+                    "https://us1.locationiq.com/v1/reverse",
+                    params={"key": LOCATIONIQ_KEY, "lat": lat, "lon": lon,
+                            "format": "json", "accept-language": "ro"},
+                )
+                if r.status_code == 200:
+                    d = r.json()
+                    display = d.get("display_name")
+            except Exception:
+                pass
+
+        # 2) Nominatim fallback
+        if not display:
+            try:
+                r = await client.get(
+                    "https://nominatim.openstreetmap.org/reverse",
+                    params={"format": "json", "lat": lat, "lon": lon, "accept-language": "ro"},
+                )
+                if r.status_code == 200:
+                    d = r.json()
+                    display = d.get("display_name")
+            except Exception:
+                pass
+
+    result = {"display": display or f"{lat:.5f}, {lon:.5f}", "lat": lat, "lon": lon}
+    # Salvează în cache doar dacă avem o adresă reală
+    if display:
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("INSERT OR REPLACE INTO geo_cache VALUES (?,?)",
+                             (key, json.dumps(result)))
+            await db.commit()
+    return result
 
 
 # ── Rutare ───────────────────────────────────────────────────────────────────
