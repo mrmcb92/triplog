@@ -247,6 +247,38 @@ class PDFRequest(BaseModel):
     total_col_label: str = "Total KM"
 
 
+def _register_unicode_font() -> str:
+    """Înregistrează DejaVu Sans (regular + bold) cu suport Unicode pentru diacritice.
+    Returnează 'DejaVuSans' dacă reușește, 'Helvetica' ca fallback."""
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    font_name = "DejaVuSans"
+    if font_name in pdfmetrics._fonts:
+        return font_name
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        os.path.join(base_dir, "fonts"),                        # bundled în proiect
+        "/usr/share/fonts/truetype/dejavu",                     # Debian/Ubuntu
+        "/usr/share/fonts/dejavu",                              # Fedora/CentOS
+        "/usr/share/fonts/TTF",                                 # Arch
+    ]
+    for d in candidates:
+        reg  = os.path.join(d, "DejaVuSans.ttf")
+        bold = os.path.join(d, "DejaVuSans-Bold.ttf")
+        if os.path.isfile(reg):
+            pdfmetrics.registerFont(TTFont("DejaVuSans",      reg))
+            pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", bold if os.path.isfile(bold) else reg))
+            pdfmetrics.registerFontFamily(
+                "DejaVuSans",
+                normal="DejaVuSans", bold="DejaVuSans-Bold",
+                italic="DejaVuSans", boldItalic="DejaVuSans-Bold",
+            )
+            return font_name
+    return "Helvetica"   # fallback dacă fontul lipsește
+
+
 @app.post("/api/export/pdf")
 async def export_pdf(body: PDFRequest):
     try:
@@ -257,24 +289,29 @@ async def export_pdf(body: PDFRequest):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib.enums import TA_CENTER
 
+        fn      = _register_unicode_font()          # ex. 'DejaVuSans'
+        fn_bold = fn + "-Bold" if fn != "Helvetica" else "Helvetica-Bold"
+
         bio = io.BytesIO()
         doc = SimpleDocTemplate(bio, pagesize=landscape(A4),
                                 leftMargin=1.5*cm, rightMargin=1.5*cm,
                                 topMargin=1.5*cm, bottomMargin=1.5*cm)
         styles  = getSampleStyleSheet()
         t_style = ParagraphStyle('T', parent=styles['Title'], fontSize=16, spaceAfter=4,
-                                 alignment=TA_CENTER, textColor=colors.HexColor('#4338CA'))
+                                 fontName=fn_bold, alignment=TA_CENTER,
+                                 textColor=colors.HexColor('#4338CA'))
         s_style = ParagraphStyle('S', parent=styles['Normal'], fontSize=9, spaceAfter=10,
-                                 alignment=TA_CENTER, textColor=colors.HexColor('#64748B'))
+                                 fontName=fn, alignment=TA_CENTER,
+                                 textColor=colors.HexColor('#64748B'))
 
-        # Stiluri cu word-wrap pentru celule
-        hdr_ps   = ParagraphStyle('H',  fontSize=8,  fontName='Helvetica-Bold',
+        # Stiluri cu word-wrap pentru celule — folosesc fontul Unicode
+        hdr_ps   = ParagraphStyle('H',  fontSize=8,  fontName=fn_bold,
                                   textColor=colors.white, alignment=TA_CENTER,
                                   leading=10, wordWrap='LTR')
-        cell_ps  = ParagraphStyle('C',  fontSize=7,  alignment=TA_CENTER,
+        cell_ps  = ParagraphStyle('C',  fontSize=7,  fontName=fn, alignment=TA_CENTER,
                                   leading=9,  wordWrap='LTR',
                                   textColor=colors.HexColor('#0F172A'))
-        total_ps = ParagraphStyle('TC', fontSize=9,  fontName='Helvetica-Bold',
+        total_ps = ParagraphStyle('TC', fontSize=9,  fontName=fn_bold,
                                   alignment=TA_CENTER, leading=11,
                                   textColor=colors.HexColor('#4338CA'))
 
