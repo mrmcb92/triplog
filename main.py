@@ -266,6 +266,18 @@ async def export_pdf(body: PDFRequest):
                                  alignment=TA_CENTER, textColor=colors.HexColor('#4338CA'))
         s_style = ParagraphStyle('S', parent=styles['Normal'], fontSize=9, spaceAfter=10,
                                  alignment=TA_CENTER, textColor=colors.HexColor('#64748B'))
+
+        # Stiluri cu word-wrap pentru celule
+        hdr_ps   = ParagraphStyle('H',  fontSize=8,  fontName='Helvetica-Bold',
+                                  textColor=colors.white, alignment=TA_CENTER,
+                                  leading=10, wordWrap='LTR')
+        cell_ps  = ParagraphStyle('C',  fontSize=7,  alignment=TA_CENTER,
+                                  leading=9,  wordWrap='LTR',
+                                  textColor=colors.HexColor('#0F172A'))
+        total_ps = ParagraphStyle('TC', fontSize=9,  fontName='Helvetica-Bold',
+                                  alignment=TA_CENTER, leading=11,
+                                  textColor=colors.HexColor('#4338CA'))
+
         story = [Paragraph(body.title, t_style)]
         meta  = " | ".join(filter(None, [
             body.vehicle and f"Vehicul: {body.vehicle}",
@@ -276,31 +288,37 @@ async def export_pdf(body: PDFRequest):
         story.append(Spacer(1, 0.3*cm))
 
         if body.rows:
-            cols   = list(body.rows[0].keys())
-            data   = [cols + [body.total_col_label]]
+            cols = list(body.rows[0].keys())
+
+            # Header + rânduri cu Paragraph → wrap automat
+            data = [[Paragraph(c, hdr_ps) for c in cols]
+                    + [Paragraph(body.total_col_label, hdr_ps)]]
             for i, row in enumerate(body.rows):
-                data.append([str(row.get(c, '')) for c in cols]
-                            + ([f"{body.total:.1f}"] if i == 0 else ['']))
+                cells = [Paragraph(str(row.get(c, '')), cell_ps) for c in cols]
+                cells.append(Paragraph(f"{body.total:.1f}" if i == 0 else '', total_ps if i == 0 else cell_ps))
+                data.append(cells)
+
             page_w = landscape(A4)[0] - 3*cm
-            wide   = {'plecare', 'destinație', 'destinatie', 'from', 'to', 'scop', 'purpose'}
-            col_w  = [page_w * (0.22 if any(w in c.lower() for w in wide) else 0.09) for c in cols]
-            col_w.append(page_w * 0.10)
+
+            # Coloane late (adrese, scop) — RO și EN
+            wide = {'plecare', 'destinație', 'destinatie', 'departure', 'from',
+                    'destination', 'to', 'scop', 'purpose'}
+            raw_w = [0.22 if any(w in c.lower() for w in wide) else 0.09 for c in cols]
+            raw_w.append(0.10)                        # coloana Total
+            scale = 1.0 / sum(raw_w)                  # normalizare → suma = page_w
+            col_w = [page_w * w * scale for w in raw_w]
+
             tbl = Table(data, colWidths=col_w, repeatRows=1)
             tbl.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6366F1')),
-                ('TEXTCOLOR',  (0, 0), (-1, 0), colors.white),
-                ('FONTNAME',   (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE',   (0, 0), (-1, 0), 8),
-                ('FONTSIZE',   (0, 1), (-1,-1), 7),
-                ('ALIGN',      (0, 0), (-1,-1), 'CENTER'),
-                ('VALIGN',     (0, 0), (-1,-1), 'MIDDLE'),
-                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F8FAFC')]),
-                ('GRID',       (0, 0), (-1,-1), 0.4, colors.HexColor('#E2E8F0')),
-                ('TOPPADDING',    (0,0), (-1,-1), 5),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
-                ('FONTNAME',   (-1, 1), (-1, 1), 'Helvetica-Bold'),
-                ('FONTSIZE',   (-1, 1), (-1, 1), 9),
-                ('TEXTCOLOR',  (-1, 1), (-1, 1), colors.HexColor('#4338CA')),
+                ('BACKGROUND',    (0, 0), (-1,  0), colors.HexColor('#6366F1')),
+                ('ROWBACKGROUNDS',(0, 1), (-1, -1), [colors.white, colors.HexColor('#F8FAFC')]),
+                ('GRID',          (0, 0), (-1, -1), 0.4, colors.HexColor('#E2E8F0')),
+                ('ALIGN',         (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+                ('TOPPADDING',    (0, 0), (-1, -1), 5),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                ('LEFTPADDING',   (0, 0), (-1, -1), 4),
+                ('RIGHTPADDING',  (0, 0), (-1, -1), 4),
             ]))
             story.append(tbl)
 
