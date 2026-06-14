@@ -68,6 +68,13 @@
     .theme-toggle{width:38px;height:38px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.18s,transform 0.15s,box-shadow 0.18s;color:var(--text);flex-shrink:0}
     .theme-toggle:hover{background:var(--surface-hover);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
     .theme-toggle:active{transform:scale(0.94)}
+    .install-banner{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(135deg,rgba(180,83,9,0.10),rgba(217,119,6,0.05));border:1.5px solid var(--accent-border);color:var(--accent-text);border-radius:14px;padding:11px 16px;cursor:pointer;text-align:left;transition:transform 0.15s,box-shadow 0.18s,background 0.18s}
+    .install-banner:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+    .install-banner:active{transform:scale(0.99)}
+    .install-step{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+    .install-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+    .install-card{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:16px 16px 6px;margin-top:14px}
+    .install-card-title{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-weight:700;font-size:15px;color:var(--text)}
     .main{flex:1;padding-top:64px;padding-bottom:90px;overflow-y:auto}
     .view{padding:18px 16px 0;max-width:680px;margin:0 auto}
     .card{background:var(--surface-solid);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm);transition:box-shadow 0.2s,transform 0.2s;position:relative}
@@ -297,6 +304,19 @@ const TRANSLATIONS = {
     allMonths:'All months', selectMonth:'Select month',
     btnShareRoute:'Share', msgLinkCopied:'Link copied!',
     btnNewRoute:'New route',
+    btnInstall:'Install app', installBannerSub:'Add it to your home screen',
+    installTitle:'Install the app',
+    installSub:'Add the app to your phone’s home screen for quick, full-screen access — it works offline too.',
+    installNative:'Install now',
+    installIosTitle:'iPhone / iPad (Safari)',
+    installIosStep1:'Tap the Share button at the bottom of Safari.',
+    installIosStep2:'Choose “Add to Home Screen”.',
+    installIosStep3:'Tap “Add” in the top-right corner.',
+    installAndroidTitle:'Android (Chrome)',
+    installAndroidStep1:'Tap the ⋮ menu in the top-right corner.',
+    installAndroidStep2:'Choose “Install app” or “Add to Home screen”.',
+    installAndroidStep3:'Confirm by tapping “Install”.',
+    installDone:'The app icon will then appear on your home screen.',
     mapNoRoute:'Calculate a route first to see it on the map.',
     deleteConfirm:'Delete?',
     driver:'Driver',
@@ -347,6 +367,19 @@ const TRANSLATIONS = {
     allMonths:'Toate lunile', selectMonth:'Selectează luna',
     btnShareRoute:'Partajează', msgLinkCopied:'Link copiat!',
     btnNewRoute:'Traseu nou',
+    btnInstall:'Instalează aplicația', installBannerSub:'Adaugă pe ecranul principal',
+    installTitle:'Instalează aplicația',
+    installSub:'Adaugă aplicația pe ecranul principal al telefonului pentru acces rapid, pe tot ecranul — funcționează și offline.',
+    installNative:'Instalează acum',
+    installIosTitle:'iPhone / iPad (Safari)',
+    installIosStep1:'Apasă butonul Partajare din partea de jos a Safari.',
+    installIosStep2:'Alege „Adaugă pe ecranul principal”.',
+    installIosStep3:'Apasă „Adaugă” în colțul din dreapta sus.',
+    installAndroidTitle:'Android (Chrome)',
+    installAndroidStep1:'Apasă meniul ⋮ din colțul din dreapta sus.',
+    installAndroidStep2:'Alege „Instalează aplicația” sau „Adaugă pe ecranul principal”.',
+    installAndroidStep3:'Confirmă apăsând „Instalează”.',
+    installDone:'Pictograma aplicației va apărea apoi pe ecranul principal.',
     mapNoRoute:'Calculează un traseu pentru a-l vedea pe hartă.',
     deleteConfirm:'Ștergi?',
     driver:'Șofer',
@@ -415,6 +448,9 @@ const Icon=({name,size=18})=>{const p={width:size,height:size,viewBox:"0 0 24 24
   trash:<svg {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>,
   settings:<svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
   newRoute:<svg {...p}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>,
+  install:<svg {...p}><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="11" y1="5" x2="13" y2="5"/><path d="M12 9v6"/><polyline points="9.5 12.5 12 15 14.5 12.5"/></svg>,
+  apple:<svg {...p}><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06z"/><path d="M10 2c1 .5 2 2 2 5"/></svg>,
+  smartphone:<svg {...p}><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
 };return icons[name]||null};
 
 // ── AddressInput ──────────────────────────────────────────────────────────────
@@ -514,6 +550,42 @@ function VehicleModal({vehicles,onSave,onClose,t}){
             <Icon name="plus" size={14}/>{t.btnAddVehicle}
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── InstallModal ──────────────────────────────────────────────────────────────
+function InstallModal({onClose,onNativeInstall,canInstall,t}){
+  const Step=({n,children})=>(
+    <div className="install-step"><div className="install-num">{n}</div><div style={{fontSize:14,lineHeight:1.5,color:'var(--text-2)',paddingTop:2}}>{children}</div></div>
+  );
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal-box">
+        <div className="modal-title">
+          <span>{t.installTitle}</span>
+          <button className="btn-icon" onClick={onClose}><Icon name="x" size={16}/></button>
+        </div>
+        <p style={{fontSize:14,color:'var(--text-2)',lineHeight:1.5,margin:'4px 0 0'}}>{t.installSub}</p>
+        {canInstall&&(
+          <button className="btn btn-primary" style={{marginTop:16,height:46}} onClick={onNativeInstall}>
+            <Icon name="install" size={16}/>{t.installNative}
+          </button>
+        )}
+        <div className="install-card">
+          <div className="install-card-title"><Icon name="apple" size={18}/>{t.installIosTitle}</div>
+          <Step n="1">{t.installIosStep1}</Step>
+          <Step n="2">{t.installIosStep2}</Step>
+          <Step n="3">{t.installIosStep3}</Step>
+        </div>
+        <div className="install-card">
+          <div className="install-card-title"><Icon name="smartphone" size={18}/>{t.installAndroidTitle}</div>
+          <Step n="1">{t.installAndroidStep1}</Step>
+          <Step n="2">{t.installAndroidStep2}</Step>
+          <Step n="3">{t.installAndroidStep3}</Step>
+        </div>
+        <p style={{fontSize:13,color:'var(--text-3)',textAlign:'center',margin:'16px 0 0'}}>{t.installDone}</p>
       </div>
     </div>
   );
@@ -1049,8 +1121,27 @@ function App(){
   const[selectedVehicleId,setSelectedVehicleId]=useState('');
   const[showVehicleModal,setShowVehicleModal]=useState(false);
   const[flashMsg,setFlashMsg]=useState('');
+  const[showInstallModal,setShowInstallModal]=useState(false);
+  const[deferredPrompt,setDeferredPrompt]=useState(null);
+  const[isStandalone,setIsStandalone]=useState(()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true);
 
   useEffect(()=>{document.documentElement.setAttribute('data-theme',theme);localStorage.setItem('fp_theme',theme)},[theme]);
+
+  // PWA install prompt capture
+  useEffect(()=>{
+    const onPrompt=e=>{e.preventDefault();setDeferredPrompt(e)};
+    const onInstalled=()=>{setIsStandalone(true);setShowInstallModal(false);setDeferredPrompt(null)};
+    window.addEventListener('beforeinstallprompt',onPrompt);
+    window.addEventListener('appinstalled',onInstalled);
+    return()=>{window.removeEventListener('beforeinstallprompt',onPrompt);window.removeEventListener('appinstalled',onInstalled)};
+  },[]);
+
+  const handleNativeInstall=async()=>{
+    if(!deferredPrompt)return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+  };
 
   // Save vehicles to storage whenever they change
   useEffect(()=>{saveVehicles(vehicles)},[vehicles]);
@@ -1149,12 +1240,28 @@ function App(){
 
       {calculating&&<div className="loader-overlay"><div className="loader-big"/><div className="loader-text">{t.loaderText}</div></div>}
       {showVehicleModal&&<VehicleModal vehicles={vehicles} onSave={setVehicles} onClose={()=>setShowVehicleModal(false)} t={t}/>}
+      {showInstallModal&&<InstallModal canInstall={!!deferredPrompt} onNativeInstall={handleNativeInstall} onClose={()=>setShowInstallModal(false)} t={t}/>}
 
       <div className="main">
         {(error||flashMsg)&&(
           <div style={{padding:'18px 16px 0',maxWidth:680,margin:'0 auto'}}>
             {error&&<div className="alert alert-error">{error}</div>}
             {flashMsg&&<div className="alert alert-success">{flashMsg}</div>}
+          </div>
+        )}
+
+        {!isStandalone&&(
+          <div style={{padding:'16px 16px 0',maxWidth:680,margin:'0 auto'}}>
+            <button className="install-banner" onClick={()=>setShowInstallModal(true)}>
+              <span style={{display:'flex',alignItems:'center',gap:11}}>
+                <Icon name="install" size={22}/>
+                <span style={{display:'flex',flexDirection:'column',alignItems:'flex-start',gap:1}}>
+                  <span style={{fontWeight:700,fontSize:14}}>{t.btnInstall}</span>
+                  <span style={{fontSize:12,opacity:0.8,fontWeight:500}}>{t.installBannerSub}</span>
+                </span>
+              </span>
+              <span style={{display:'flex',transform:'rotate(-90deg)',opacity:0.6}}><Icon name="chevronDown" size={16}/></span>
+            </button>
           </div>
         )}
 
