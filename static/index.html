@@ -75,6 +75,24 @@
     .install-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
     .install-card{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:16px 16px 6px;margin-top:14px}
     .install-card-title{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-weight:700;font-size:15px;color:var(--text)}
+    .sched-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:16px}
+    .sched-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;color:var(--text);margin-bottom:14px}
+    .sched-inputs{display:flex;gap:10px;margin-bottom:6px}
+    .sched-inputs .field{flex:1;margin:0}
+    .sched-timeline{margin-top:16px;border-top:1px solid var(--border);padding-top:14px}
+    .sched-row{display:flex;align-items:center;gap:12px;padding:5px 0}
+    .sched-time{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);min-width:62px;text-align:right}
+    .sched-time sup{font-size:10px;font-weight:600;color:var(--accent-text);margin-left:1px}
+    .sched-marker{flex-shrink:0;width:10px;height:10px;border-radius:50%;border:2px solid var(--accent);background:var(--surface)}
+    .sched-marker.fill{background:var(--accent)}
+    .sched-body{flex:1;min-width:0}
+    .sched-label{font-size:11px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--text-3)}
+    .sched-name{font-size:13px;color:var(--text-2);line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sched-row.accent .sched-label{color:var(--accent-text)}
+    .sched-row.accent .sched-name{color:var(--text);font-weight:600}
+    .sched-foot{margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-3)}
+    .sched-foot b{color:var(--text-2);font-variant-numeric:tabular-nums}
+    .sched-note{margin-top:12px;font-size:13px;color:var(--text-3);line-height:1.5}
     .main{flex:1;padding-top:64px;padding-bottom:90px;overflow-y:auto}
     .view{padding:18px 16px 0;max-width:680px;margin:0 auto}
     .card{background:var(--surface-solid);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm);transition:box-shadow 0.2s,transform 0.2s;position:relative}
@@ -304,6 +322,14 @@ const TRANSLATIONS = {
     allMonths:'All months', selectMonth:'Select month',
     btnShareRoute:'Share', msgLinkCopied:'Link copied!',
     btnNewRoute:'New route',
+    scheduleTitle:'Transport schedule',
+    scheduleArrival:'Arrival at final destination',
+    scheduleStopTime:'Stop time / location (min)',
+    scheduleDepart:'Departure', scheduleArrive:'Arrival',
+    scheduleDrive:'Driving time', scheduleElapsed:'Total time',
+    scheduleHint:'Set the arrival time at the final destination to generate the schedule.',
+    scheduleNoData:'Recalculate the route to get up-to-date travel times.',
+    dayShort:'d',
     btnInstall:'Install app', installBannerSub:'Add it to your home screen',
     installTitle:'Install the app',
     installSub:'Add the app to your phone’s home screen for quick, full-screen access — it works offline too.',
@@ -367,6 +393,14 @@ const TRANSLATIONS = {
     allMonths:'Toate lunile', selectMonth:'Selectează luna',
     btnShareRoute:'Partajează', msgLinkCopied:'Link copiat!',
     btnNewRoute:'Traseu nou',
+    scheduleTitle:'Program de transport',
+    scheduleArrival:'Ora sosirii la destinația finală',
+    scheduleStopTime:'Timp de oprire / punct (min)',
+    scheduleDepart:'Plecare', scheduleArrive:'Sosire',
+    scheduleDrive:'Timp de mers', scheduleElapsed:'Timp total',
+    scheduleHint:'Setează ora sosirii la destinația finală pentru a genera programul.',
+    scheduleNoData:'Recalculează traseul pentru a obține timpii de mers actualizați.',
+    dayShort:'z',
     btnInstall:'Instalează aplicația', installBannerSub:'Adaugă pe ecranul principal',
     installTitle:'Instalează aplicația',
     installSub:'Adaugă aplicația pe ecranul principal al telefonului pentru acces rapid, pe tot ecranul — funcționează și offline.',
@@ -393,6 +427,9 @@ function today(){return new Date().toISOString().slice(0,10)}
 function fmtDate(iso){if(!iso)return '';const[y,m,d]=iso.split('-');return`${d}.${m}.${y}`}
 function uid(){return Math.random().toString(36).slice(2,9)}
 function kmRound(x){return Math.floor(x*10+0.5)/10}
+function hhmmToMin(s){if(!s||!s.includes(':'))return null;const[h,m]=s.split(':').map(Number);if(isNaN(h)||isNaN(m))return null;return h*60+m}
+function minToHHMM(m){let off=Math.floor(m/1440);let mm=Math.round(m-off*1440);if(mm>=1440){mm-=1440;off+=1}const h=String(Math.floor(mm/60)).padStart(2,'0');const mi=String(mm%60).padStart(2,'0');return{time:`${h}:${mi}`,off}}
+function fmtDur(min){const m=Math.max(0,Math.round(min));const h=Math.floor(m/60),r=m%60;return h?`${h}h ${r}m`:`${r}m`}
 function fmtMonth(ym){const[y,m]=ym.split('-');const dt=new Date(+y,+m-1,1);return dt.toLocaleDateString(undefined,{year:'numeric',month:'long'})}
 function encodeRoute(start,stops){try{const d={s:{t:start.text,d:start.display},o:stops.map(s=>({t:s.text,d:s.display}))};return btoa(unescape(encodeURIComponent(JSON.stringify(d))))}catch{return null}}
 function decodeRoute(enc){try{return JSON.parse(decodeURIComponent(escape(atob(enc))))}catch{return null}}
@@ -779,6 +816,8 @@ function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setClos
 // ── SegmentsView ──────────────────────────────────────────────────────────────
 function SegmentsView({segments,segOpts,setSegOpts,vehicles,selectedVehicleId,onGoRoute,onSaveHistory,t}){
   const vehicle=vehicles.find(v=>v.id===selectedVehicleId)||null;
+  const[arrivalTime,setArrivalTime]=useState('');
+  const[stopMin,setStopMin]=useState('');
 
   if(!segments.length){
     return(
@@ -805,6 +844,31 @@ function SegmentsView({segments,segOpts,setSegOpts,vehicles,selectedVehicleId,on
   };
   const totalCost=calcCost(total);
 
+  // ── Transport schedule (backward from final arrival time) ──
+  const hasDurations=segments.every(s=>typeof s.min==='number');
+  const stopMinNum=Math.max(0,parseInt(stopMin,10)||0);
+  const arrivalMin=hhmmToMin(arrivalTime);
+  let schedRows=null,driveMin=0,elapsedMin=0;
+  if(hasDurations&&arrivalMin!=null){
+    const n=segments.length;
+    const names=[segments[0].from,...segments.map(s=>s.to)];
+    const arrive=new Array(n+1);
+    arrive[n]=arrivalMin;
+    for(let k=n-1;k>=0;k--){
+      const departK=arrive[k+1]-segments[k].min;
+      arrive[k]=k===0?departK:departK-stopMinNum;
+    }
+    schedRows=[{kind:'depart',name:names[0],min:arrive[0]}];
+    for(let k=1;k<n;k++){
+      schedRows.push({kind:'arrive',name:names[k],min:arrive[k]});
+      if(stopMinNum>0)schedRows.push({kind:'leave',name:names[k],min:arrive[k]+stopMinNum});
+    }
+    schedRows.push({kind:'final',name:names[n],min:arrive[n]});
+    driveMin=segments.reduce((s,seg)=>s+seg.min,0);
+    elapsedMin=arrive[n]-arrive[0];
+  }
+  const SchedTime=({m})=>{const f=minToHHMM(m);return(<span className="sched-time">{f.time}{f.off!==0&&<sup>{f.off>0?'+':''}{f.off}{t.dayShort}</sup>}</span>)};
+
   return(
     <div className="view">
       <div className="total-hero">
@@ -816,6 +880,37 @@ function SegmentsView({segments,segOpts,setSegOpts,vehicles,selectedVehicleId,on
           </div>
           <div className="total-hero-icon"><Icon name="car" size={26}/></div>
         </div>
+      </div>
+
+      <div className="sched-card">
+        <div className="sched-title"><Icon name="clock" size={16}/>{t.scheduleTitle}</div>
+        <div className="sched-inputs">
+          <div className="field"><label>{t.scheduleArrival}</label><input type="time" value={arrivalTime} onChange={e=>setArrivalTime(e.target.value)}/></div>
+          <div className="field"><label>{t.scheduleStopTime}</label><input type="number" min="0" step="5" value={stopMin} placeholder="0" onChange={e=>setStopMin(e.target.value)}/></div>
+        </div>
+        {!hasDurations?(
+          <div className="sched-note">{t.scheduleNoData}</div>
+        ):schedRows?(
+          <div className="sched-timeline">
+            {schedRows.map((r,i)=>{
+              const accent=r.kind==='depart'||r.kind==='final';
+              const label=r.kind==='arrive'||r.kind==='final'?t.scheduleArrive:t.scheduleDepart;
+              return(
+                <div key={i} className={`sched-row${accent?' accent':''}`}>
+                  <SchedTime m={r.min}/>
+                  <div className={`sched-marker${accent?' fill':''}`}/>
+                  <div className="sched-body">
+                    <div className="sched-label">{label}</div>
+                    <div className="sched-name">{r.name}</div>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="sched-foot"><span>{t.scheduleDrive}: <b>{fmtDur(driveMin)}</b></span><span>{t.scheduleElapsed}: <b>{fmtDur(elapsedMin)}</b></span></div>
+          </div>
+        ):(
+          <div className="sched-note">{t.scheduleHint}</div>
+        )}
       </div>
 
       {segments.map((seg,i)=>{
@@ -1177,7 +1272,7 @@ function App(){
       const pts=[resolvedStart,...resolvedStops];
       if(closeLoop)pts.push(resolvedStart);
       const data=await apiRoute(pts.map(p=>[p.lat,p.lon]));
-      const segs=data.legs_km.map((km,i)=>({from:pts[i].display,to:pts[i+1].display,km_oneway:km}));
+      const segs=data.legs_km.map((km,i)=>({from:pts[i].display,to:pts[i+1].display,km_oneway:km,min:data.legs_min?.[i]??null}));
       setSegments(segs);
       setSegOpts(segs.map(()=>({roundTrip:false,reps:1,purpose:''})));
       setCoords(data.coords||[]);

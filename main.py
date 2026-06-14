@@ -183,7 +183,7 @@ class RouteRequest(BaseModel):
 async def route(body: RouteRequest):
     if len(body.points) < 2:
         raise HTTPException(400, "Minim 2 puncte necesare.")
-    key = "|".join(f"{la:.5f},{lo:.5f}" for la, lo in body.points)
+    key = "v2|" + "|".join(f"{la:.5f},{lo:.5f}" for la, lo in body.points)
 
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT value FROM route_cache WHERE key=?", (key,)) as cur:
@@ -210,15 +210,16 @@ async def route(body: RouteRequest):
     if not routes:
         raise HTTPException(404, "Nicio rută găsită.")
 
-    legs    = routes[0].get("legs", [])
-    legs_km = [km_round(leg["distance"] / 1000) for leg in legs]
-    geom    = routes[0].get("geometry", {})
-    raw     = geom.get("coordinates", []) if geom.get("type") == "LineString" else []
-    coords  = raw[::3]
+    legs     = routes[0].get("legs", [])
+    legs_km  = [km_round(leg["distance"] / 1000) for leg in legs]
+    legs_min = [round(leg.get("duration", 0) / 60, 1) for leg in legs]
+    geom     = routes[0].get("geometry", {})
+    raw      = geom.get("coordinates", []) if geom.get("type") == "LineString" else []
+    coords   = raw[::3]
     if raw and (not coords or coords[-1] != raw[-1]):
         coords.append(raw[-1])
 
-    result = {"legs_km": legs_km, "coords": coords}
+    result = {"legs_km": legs_km, "legs_min": legs_min, "coords": coords}
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("INSERT OR REPLACE INTO route_cache VALUES (?,?)", (key, json.dumps(result)))
         await db.commit()
