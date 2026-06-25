@@ -59,7 +59,7 @@ pinned: false
 | Export PDF | reportlab |
 | Cache server | SQLite via aiosqlite |
 | Rate limiting | slowapi (60 req/min per IP) |
-| Hosting | Render (plan gratuit) |
+| Hosting | Hugging Face Spaces (Docker, plan gratuit) |
 
 ---
 
@@ -69,7 +69,7 @@ pinned: false
 triplog/
 ├── main.py              # Backend FastAPI
 ├── requirements.txt     # Dependențe Python
-├── render.yaml          # Configurare deployment Render
+├── Dockerfile           # Imagine Docker (deploy Hugging Face Spaces)
 ├── README.md
 └── static/
     ├── index.html       # Frontend React (single-file SPA)
@@ -111,17 +111,24 @@ triplog/
 
 ---
 
-## ☁️ Deployment pe Render
+## ☁️ Deployment pe Hugging Face Spaces
 
-Repo-ul include `render.yaml`. Pași:
+Repo-ul include un `Dockerfile`. Pași:
 
-1. Creează un cont pe [render.com](https://render.com)
-2. New → Web Service → conectează acest repo
-3. Setările sunt detectate automat din `render.yaml`
-4. (Opțional) Adaugă în Environment Variables:
+1. Creează un Space nou pe [huggingface.co/new-space](https://huggingface.co/new-space) cu **SDK: Docker**
+2. Adaugă remote-ul și fă push:
+   ```bash
+   git remote add hf https://huggingface.co/spaces/<utilizator>/<space>
+   git push hf main
+   ```
+   (la parolă folosești un Access Token cu rol *Write*)
+3. HF construiește automat imaginea Docker (uvicorn pe portul `7860`)
+4. (Opțional) În Settings → *Variables and secrets* adaugă:
    - `LOCATIONIQ_KEY` — cheie API LocationIQ pentru geocodare mai rapidă
    - `CONTACT_EMAIL` — email pentru header-ul User-Agent Nominatim
    - `ALLOWED_ORIGINS` — origini permise CORS (implicit `*`)
+
+> Fonturile DejaVu (diacritice PDF) sunt instalate în container prin `fonts-dejavu-core` — nu sunt ținute ca binare în git, deoarece HF respinge fișierele binare.
 
 ---
 
@@ -153,7 +160,7 @@ Aplicația se deschide fullscreen, fără bara browserului, ca o aplicație nati
 - Starea utilizatorului (vehicule, favorite, istoric) este stocată în `localStorage` — per dispozitiv. Folosește Export JSON pentru backup.
 - Cache-ul de geocodare și rutare este stocat pe server în `cache.db` (SQLite) pentru a reduce apelurile externe.
 - Serverul este stateless din perspectiva curselor — utilizatorii simultani nu se interferează.
-- Pentru volum mare de trafic se recomandă un plan plătit Render și o cheie LocationIQ dedicată.
+- Pentru volum mare de trafic se recomandă un Space plătit (hardware upgrade) și o cheie LocationIQ dedicată.
 
 ---
 ---
@@ -162,9 +169,9 @@ Aplicația se deschide fullscreen, fără bara browserului, ca o aplicație nati
 
 **Automatic km calculation for trip logs**
 
-🔗 **Live app**: [triplog-05n6.onrender.com](https://triplog-05n6.onrender.com)
+🔗 **Live app**: [mrmcb92-triplog.hf.space](https://mrmcb92-triplog.hf.space)
 
-> ⚠️ On the free Render tier, the app may take 30–50 seconds to wake up after inactivity.
+> ⚠️ On the free Hugging Face Spaces tier, the app may take a few seconds to wake up after inactivity.
 
 ---
 
@@ -207,7 +214,7 @@ Aplicația se deschide fullscreen, fără bara browserului, ca o aplicație nati
 | PDF export | reportlab |
 | Server cache | SQLite via aiosqlite |
 | Rate limiting | slowapi (60 req/min per IP) |
-| Hosting | Render (free tier) |
+| Hosting | Hugging Face Spaces (Docker, free tier) |
 
 ---
 
@@ -217,7 +224,7 @@ Aplicația se deschide fullscreen, fără bara browserului, ca o aplicație nati
 triplog/
 ├── main.py              # FastAPI backend
 ├── requirements.txt     # Python dependencies
-├── render.yaml          # Render deployment config
+├── Dockerfile           # Docker image (Hugging Face Spaces deploy)
 ├── README.md
 └── static/
     ├── index.html       # React frontend (single-file SPA)
@@ -259,17 +266,24 @@ triplog/
 
 ---
 
-## ☁️ Deployment on Render
+## ☁️ Deployment on Hugging Face Spaces
 
-The repo includes `render.yaml`. Steps:
+The repo includes a `Dockerfile`. Steps:
 
-1. Create an account at [render.com](https://render.com)
-2. New → Web Service → connect this repo
-3. Settings are auto-detected from `render.yaml`
-4. (Optional) Add Environment Variables:
+1. Create a new Space at [huggingface.co/new-space](https://huggingface.co/new-space) with **SDK: Docker**
+2. Add the remote and push:
+   ```bash
+   git remote add hf https://huggingface.co/spaces/<user>/<space>
+   git push hf main
+   ```
+   (use an Access Token with *Write* role as the password)
+3. HF builds the Docker image automatically (uvicorn on port `7860`)
+4. (Optional) In Settings → *Variables and secrets* add:
    - `LOCATIONIQ_KEY` — LocationIQ API key for faster geocoding
    - `CONTACT_EMAIL` — email for Nominatim User-Agent header
    - `ALLOWED_ORIGINS` — allowed CORS origins (default `*`)
+
+> The DejaVu fonts (PDF diacritics) are installed in the container via `fonts-dejavu-core` — they are not kept as binaries in git, since HF rejects binary files.
 
 ---
 
@@ -299,4 +313,4 @@ The repo includes `render.yaml`. Steps:
 - User state (vehicles, favorites, history) is stored in `localStorage` — per device. Use JSON export for backup.
 - Geocoding and routing results are cached server-side in `cache.db` (SQLite) to reduce external API calls.
 - The server is stateless with respect to trips — simultaneous users do not interfere with each other.
-- For high traffic, a paid Render plan and a dedicated LocationIQ key are recommended.
+- For high traffic, a paid Space (hardware upgrade) and a dedicated LocationIQ key are recommended.
