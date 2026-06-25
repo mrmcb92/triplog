@@ -14,9 +14,9 @@ pinned: false
 
 [🇬🇧 English](#-english)
 
-🔗 **Aplicație live**: [triplog-05n6.onrender.com](https://triplog-05n6.onrender.com)
+🔗 **Aplicație live**: [mrmcb92-triplog.hf.space](https://mrmcb92-triplog.hf.space)
 
-> ⚠️ La prima accesare după o perioadă de inactivitate, aplicația poate dura 30–50 de secunde să pornească (limitare a planului gratuit Render).
+> ⚠️ La prima accesare după o perioadă de inactivitate, aplicația poate dura câteva secunde să pornească (limitare a planului gratuit Hugging Face Spaces).
 
 ---
 
