@@ -25,3 +25,6 @@ Thumbs.db
 # Env files
 .env
 .env.local
+
+# Fonturi binare — instalate în Docker (fonts-dejavu-core); HF respinge binare în git
+fonts/*.ttf
