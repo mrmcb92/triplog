@@ -1,3 +1,13 @@
+---
+title: TripLog
+emoji: 🚗
+colorFrom: yellow
+colorTo: orange
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # TripLog 🚗
 
 **Calcul automat km pentru foaia de parcurs**

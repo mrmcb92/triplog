@@ -1,0 +1,15 @@
+.git
+.gitignore
+.claude
+.agents
+__pycache__
+*.pyc
+*.db
+cache.db
+.DS_Store
+render.yaml
+skills-lock.json
+.env
+.env.local
+venv
+.venv
