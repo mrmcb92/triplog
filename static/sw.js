@@ -1,4 +1,4 @@
-const CACHE = 'foaie-parcurs-v1';
+const CACHE = 'foaie-parcurs-v2';
 
 // Fișiere care se cachează la instalare (app shell)
 const SHELL = [
@@ -49,9 +49,9 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // App shell: network-first cu fallback pe cache
+  // App shell: network-first, ignorând cache-ul HTTP (evită versiuni vechi blocate în cache pe mobil)
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-store' })
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));

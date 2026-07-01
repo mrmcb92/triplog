@@ -415,7 +415,8 @@ async def health():
 async def service_worker():
     with open("static/sw.js") as f:
         return FastAPIResponse(f.read(), media_type="application/javascript",
-                               headers={"Service-Worker-Allowed": "/"})
+                               headers={"Service-Worker-Allowed": "/",
+                                        "Cache-Control": "no-cache, no-store, must-revalidate"})
 
 
 INDEX_PATH = os.path.join("static", "index.html")
@@ -423,13 +424,16 @@ if os.path.isdir("static"):
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+NO_CACHE_HEADERS = {"Cache-Control": "no-cache, no-store, must-revalidate"}
+
+
 @app.get("/")
 async def root():
-    return FileResponse(INDEX_PATH)
+    return FileResponse(INDEX_PATH, headers=NO_CACHE_HEADERS)
 
 
 @app.get("/{full_path:path}")
 async def spa(full_path: str):
     if full_path.startswith("api/"):
         raise HTTPException(404, "Not found")
-    return FileResponse(INDEX_PATH)
+    return FileResponse(INDEX_PATH, headers=NO_CACHE_HEADERS)
