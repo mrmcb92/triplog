@@ -4,8 +4,8 @@
   "description": "Automatic km calculation for trip logs",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0A0A14",
-  "theme_color": "#6366F1",
+  "background_color": "#16101E",
+  "theme_color": "#0099FF",
   "orientation": "portrait-primary",
   "icons": [
     {
