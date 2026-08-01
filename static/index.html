@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@500,600,700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="" />
   <style>
     :root[data-theme="light"] {
       --accent: #0099FF; --accent-2: #2F6FEE; --accent-soft: #E6F4FF;
@@ -268,10 +268,10 @@
 </head>
 <body>
 <div id="root"></div>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js" integrity="sha384-x/ilTFv/u/eu6YSmkFDZl5V5Mm/pkxxcVv2cVJOrr1J0rvILhMvRBCy6yA75wYBj" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
 
 <script type="text/babel">
 const { useState, useRef, useEffect, useCallback } = React;
@@ -498,16 +498,21 @@ function AddressInput({value,display,onTextChange,onSelect,placeholder}){
   const[loading,setLoading]=useState(false);
   const[open,setOpen]=useState(false);
   const timer=useRef(null);
+  const reqId=useRef(0);
   const wrapRef=useRef(null);
   useEffect(()=>{
     function h(e){if(wrapRef.current&&!wrapRef.current.contains(e.target))setOpen(false)}
     document.addEventListener('mousedown',h);document.addEventListener('touchstart',h);
-    return()=>{document.removeEventListener('mousedown',h);document.removeEventListener('touchstart',h)};
+    return()=>{
+      document.removeEventListener('mousedown',h);document.removeEventListener('touchstart',h);
+      clearTimeout(timer.current);
+    };
   },[]);
   const handleChange=e=>{
     const v=e.target.value;onTextChange(v);clearTimeout(timer.current);
-    if(v.length>=3){timer.current=setTimeout(async()=>{setLoading(true);try{const r=await apiGeocode(v);setCandidates(r);setOpen(r.length>0)}catch{}setLoading(false)},450)}
-    else{setCandidates([]);setOpen(false)}
+    const id=++reqId.current;
+    if(v.length>=3){timer.current=setTimeout(async()=>{setLoading(true);try{const r=await apiGeocode(v);if(reqId.current===id){setCandidates(r);setOpen(r.length>0)}}catch{}if(reqId.current===id)setLoading(false)},450)}
+    else{setCandidates([]);setOpen(false);setLoading(false)}
   };
   const handleSelect=c=>{onSelect(c);setCandidates([]);setOpen(false)};
   return(
@@ -661,14 +666,15 @@ function MapView({coords,segments,isActive,t}){
       html:`<div style="width:28px;height:28px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:700;font-family:system-ui">${label}</div>`,
       iconSize:[28,28],iconAnchor:[14,14],className:''
     });
+    const popupEl=label=>{const el=document.createElement('div');el.textContent=label;return el};
     segments.forEach((seg,i)=>{
       if(i===0){
         const m=L.marker(ll[0],{icon:mkIcon('#6366F1','S')}).addTo(map);
-        m.bindPopup(`<b>${seg.from}</b>`);
+        m.bindPopup(popupEl(seg.from));
         markersRef.current.push(m);
       }
       const m=L.marker(ll[Math.min(ll.length-1,Math.round((i+1)*ll.length/segments.length))],{icon:mkIcon('#8B5CF6',i+1)}).addTo(map);
-      m.bindPopup(`<b>${seg.to}</b>`);
+      m.bindPopup(popupEl(seg.to));
       markersRef.current.push(m);
     });
     map.fitBounds(polyRef.current.getBounds(),{padding:[30,30]});

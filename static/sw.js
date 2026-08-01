@@ -1,4 +1,4 @@
-const CACHE = 'foaie-parcurs-v2';
+const CACHE = 'foaie-parcurs-v3';
 
 // Fișiere care se cachează la instalare (app shell)
 const SHELL = [
@@ -50,13 +50,21 @@ self.addEventListener('fetch', e => {
   }
 
   // App shell: network-first, ignorând cache-ul HTTP (evită versiuni vechi blocate în cache pe mobil)
+  const mode = e.request.mode;
   e.respondWith(
     fetch(e.request, { cache: 'no-store' })
       .then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
+        if (res.ok && res.type === 'basic') {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
         return res;
       })
-      .catch(() => caches.match(e.request).then(cached => cached || caches.match('/')))
+      .catch(() => caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        // Fallback la app shell DOAR pentru navigări (pagini), nu pentru asseturi
+        if (mode === 'navigate') return caches.match('/');
+        return Response.error();
+      }))
   );
 });

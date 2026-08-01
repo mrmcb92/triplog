@@ -7,8 +7,6 @@ __pycache__
 *.db
 cache.db
 .DS_Store
-render.yaml
-skills-lock.json
 .env
 .env.local
 venv
