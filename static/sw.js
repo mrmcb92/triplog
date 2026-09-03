@@ -1,4 +1,4 @@
-const CACHE = 'foaie-parcurs-v4';
+const CACHE = 'foaie-parcurs-v5';
 
 // Fișiere care se cachează la instalare (app shell)
 const SHELL = [
