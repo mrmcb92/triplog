@@ -1,3 +1,8 @@
+# Node.js
+node_modules/
+dist/
+npm-debug.log*
+
 # Python
 __pycache__/
 *.py[cod]
