@@ -12,8 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          lfs: true
+          fetch-depth: 1
 
       - name: Push to Hugging Face Space
         env:
@@ -25,7 +24,25 @@ jobs:
             echo "::error::HF_TOKEN secret is not configured in GitHub repository secrets! Go to GitHub repo -> Settings -> Secrets and variables -> Actions -> New repository secret -> Name: HF_TOKEN (with Write permissions from huggingface.co/settings/tokens)."
             exit 1
           fi
+
           # Support both 'mrmcb92/triplog' and 'triplog' in HF_SPACE
           SPACE_NAME="${HF_SPACE#*/}"
+          HF_REPO_URL="https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${SPACE_NAME}"
+
+          echo "Preparing clean deployment for Hugging Face..."
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Hugging Face Spaces pre-receive hook rejects raw binary files like .ttf/.otf
+          # Remove legacy font files and directories
+          rm -rf fonts/
+          find . -name "*.ttf" -o -name "*.otf" | xargs -r rm -f
+
+          # Create clean orphan branch with no binary history to satisfy HF pre-receive hook
+          git checkout --orphan hf-sync
+          git reset
+          git add -A
+          git commit -m "Deploy TripLog to Hugging Face Space [skip ci]"
+
           echo "Syncing repository to Hugging Face Space: ${HF_USERNAME}/${SPACE_NAME}..."
-          git push --force "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${SPACE_NAME}" HEAD:refs/heads/main
+          git push --force "$HF_REPO_URL" hf-sync:main
