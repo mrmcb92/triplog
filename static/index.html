@@ -11,6 +11,9 @@
   <meta name="apple-mobile-web-app-title" content="TripLog" />
   <meta name="application-name" content="TripLog" />
   <title>TripLog</title>
+  <meta name="description" content="Automatic km calculation and trip log generator with route optimization and export" />
+  <meta property="og:title" content="TripLog" />
+  <meta property="og:description" content="Automatic km calculation and trip log generator with route optimization and export" />
   <link rel="manifest" href="/static/manifest.json" />
   <link rel="apple-touch-icon" href="/static/icon-192.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png" />
@@ -282,6 +285,37 @@
     /* Inline label+action */
     .label-action{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
     .label-action label{margin-bottom:0}
+    /* Subtabs */
+    .subtabs-bar{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:4px;margin-bottom:14px;overflow-x:auto}
+    .subtab-btn{flex:1;min-width:max-content;padding:8px 12px;border:none;background:transparent;color:var(--text-3);font-size:12.5px;font-weight:600;border-radius:10px;cursor:pointer;transition:all 0.18s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+    .subtab-btn.active{background:var(--surface-solid);color:var(--accent-text);box-shadow:var(--shadow-sm)}
+    /* Nav quick launch */
+    .btn-nav-app{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;transition:all 0.15s;font-family:inherit;text-decoration:none}
+    .btn-waze{background:#33ccff15;color:#0099cc;border:1px solid #33ccff40}
+    .btn-waze:hover{background:#33ccff28}
+    .btn-gmaps{background:#34a85315;color:#1e7e34;border:1px solid #34a85340}
+    .btn-gmaps:hover{background:#34a85328}
+    /* Eco CO2 badge */
+    .badge-eco{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:#10b98115;color:#059669;border:1px solid #10b98130;border-radius:20px;font-size:11.5px;font-weight:600}
+    .badge-auto-odo{font-size:10.5px;color:var(--accent-text);background:var(--accent-soft);padding:1px 6px;border-radius:6px;margin-left:6px;font-weight:600}
+    /* Search */
+    .search-wrap{position:relative;margin-bottom:12px}
+    .search-input{width:100%;height:44px;padding:0 36px 0 14px;border:1.5px solid var(--border-2);border-radius:12px;font-size:14px;background:var(--surface-solid);color:var(--text)}
+    .search-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:transparent;border:none;color:var(--text-3);cursor:pointer;padding:4px}
+    /* Simple SVG/Bar Chart */
+    .chart-box{background:var(--surface-solid);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+    .chart-bars{display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:10px;border-bottom:1px solid var(--border)}
+    .chart-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:4px}
+    .chart-bar{width:100%;max-width:32px;background:linear-gradient(180deg,var(--accent),var(--accent-2));border-radius:6px 6px 0 0;min-height:4px;transition:height 0.4s ease}
+    .chart-col-label{font-size:10.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55px;text-align:center;margin-top:4px}
+    .chart-val-hint{font-size:10px;font-weight:700;color:var(--text-2)}
+    /* Textarea */
+    textarea.bulk-textarea{width:100%;height:140px;padding:12px;border:1.5px solid var(--border-2);border-radius:14px;font-size:13.5px;color:var(--text);font-family:inherit;background:var(--surface-2);resize:vertical;outline:none}
+    textarea.bulk-textarea:focus{border-color:var(--accent);background:var(--surface-solid)}
+    /* Fuel station quick chips */
+    .station-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+    .station-chip{font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--border-2);background:var(--surface-2);color:var(--text-2);cursor:pointer;transition:all 0.15s}
+    .station-chip.selected{background:var(--accent-soft);border-color:var(--accent-border);color:var(--accent-text)}
     @media(min-width:480px){.view{padding:22px 20px 0}}
     @media(min-width:680px){.bottom-nav{max-width:680px;left:50%;transform:translateX(-50%);border-radius:20px 20px 0 0}}
   </style>
@@ -300,7 +334,7 @@ const { useState, useRef, useEffect, useCallback } = React;
 const TRANSLATIONS = {
   en: {
     appTitle:'Trip Log', appSub:'Automatic km calculation',
-    tabRoute:'Route', tabMap:'Map', tabSegments:'Segments', tabExport:'Export', tabHistory:'History',
+    tabRoute:'Route', tabMap:'Map', tabSegments:'Segments', tabFuel:'Fuel', tabExport:'Export', tabHistory:'History',
     sectionDate:'Trip log date', sectionStart:'Starting point', sectionStops:'Stops',
     sectionOptions:'Options', sectionOdometer:'Odometer', sectionSegments:'Segments',
     sectionDownload:'Download log', sectionFavorites:'Favorites', sectionMonthly:'Monthly report',
@@ -368,10 +402,32 @@ const TRANSLATIONS = {
     mapNoRoute:'Calculate a route first to see it on the map.',
     deleteConfirm:'Delete?',
     driver:'Driver',
+    // New Feature Keys
+    btnOptimize:'Optimize order (TSP)', btnOptimizing:'Optimizing...',
+    msgOptimized:(km,pct)=>`Route optimized! Saved ~${km} km (-${pct}%).`,
+    btnBulkPaste:'Bulk paste stops', bulkPasteTitle:'Paste address list',
+    bulkPastePlaceholder:'Paste addresses here, one per line...', btnBulkApply:'Add stops',
+    btnNavWaze:'Waze', btnNavGmaps:'Google Maps', btnNavRouteGmaps:'Open full route in Google Maps',
+    sectionCompany:'Company & ANAF Tax', companyTitle:'Company & Official Road Sheet (ANAF)',
+    companyName:'Company Name', companyCui:'Tax ID / CUI', companyRegCom:'Trade Reg. No. (J...)',
+    companyAddress:'Headquarters Address', companyDocSeries:'Sheet Series', companyDocNumber:'Starting Number',
+    companyApprover:'Authorized Approver', btnSaveCompany:'Save Company Info',
+    fuelTitle:'Fuel Receipts & Logs', fuelReceiptNum:'Receipt #', fuelStation:'Station / Brand',
+    fuelType:'Fuel type', fuelLiters:'Quantity (L/kWh)', fuelPricePerLiter:'Price/unit (RON)',
+    fuelTotal:'Total (RON)', fuelOdo:'Odometer at refill', btnSaveFuel:'Save Fuel Receipt',
+    fuelConsumptionReal:'Real fleet consumption', fuelConsumptionNorm:'Normed consumption',
+    fuelExportExcel:'Export Fuel to Excel', btnOfficialRoadSheetPDF:'Download Tax PDF (ANAF Format)',
+    btnOfficialRoadSheetExcel:'Download Tax Excel (ANAF Format)',
+    backupTitle:'Full Backup & Restore', btnBackupDownload:'Download full JSON backup',
+    btnBackupRestore:'Restore from JSON backup', subtabTrips:'Trips', subtabStats:'Analytics & Fleet',
+    subtabBackup:'Backup & Data', searchPlaceholder:'Search destination, purpose, driver, car...',
+    co2Footprint:'CO₂ Footprint', odoAutoHint:'Auto-filled from previous trip',
+    templateTitle:'Route Templates', btnSaveTemplate:'Save as template', btnLoadTemplate:'Load template',
+    templateSaved:'Template saved!',
   },
   ro: {
     appTitle:'Foaie de parcurs', appSub:'Calcul automat km',
-    tabRoute:'Traseu', tabMap:'Hartă', tabSegments:'Segmente', tabExport:'Export', tabHistory:'Istoric',
+    tabRoute:'Traseu', tabMap:'Hartă', tabSegments:'Segmente', tabFuel:'Alimentări', tabExport:'Export', tabHistory:'Istoric',
     sectionDate:'Data foii de parcurs', sectionStart:'Punct de plecare', sectionStops:'Opriri',
     sectionOptions:'Opțiuni', sectionOdometer:'Odometru', sectionSegments:'Segmente',
     sectionDownload:'Descarcă foaia', sectionFavorites:'Favorite', sectionMonthly:'Raport lunar',
@@ -439,12 +495,34 @@ const TRANSLATIONS = {
     mapNoRoute:'Calculează un traseu pentru a-l vedea pe hartă.',
     deleteConfirm:'Ștergi?',
     driver:'Șofer',
+    // New Feature Keys
+    btnOptimize:'Optimizează ordinea (TSP)', btnOptimizing:'Se optimizează...',
+    msgOptimized:(km,pct)=>`Traseu optimizat! Economisești ~${km} km (-${pct}%).`,
+    btnBulkPaste:'Import listă adrese', bulkPasteTitle:'Lipește lista de adrese',
+    bulkPastePlaceholder:'Lipește adresele aici, câte una pe linie...', btnBulkApply:'Adaugă ca opriri',
+    btnNavWaze:'Waze', btnNavGmaps:'Google Maps', btnNavRouteGmaps:'Deschide tot traseul în Google Maps',
+    sectionCompany:'Date Companie (ANAF)', companyTitle:'Date Firmă & Foaie de Parcurs ANAF',
+    companyName:'Denumire firmă / Companie', companyCui:'CUI / CIF', companyRegCom:'Nr. Registrul Comerțului (J...)',
+    companyAddress:'Sediu social', companyDocSeries:'Serie Foaie', companyDocNumber:'Număr curent',
+    companyApprover:'Persoană aprobare / Responsabil auto', btnSaveCompany:'Salvează datele firmei',
+    fuelTitle:'Evidență Bonuri Carburant', fuelReceiptNum:'Nr. Bon fiscal', fuelStation:'Stație / Furnizor',
+    fuelType:'Tip carburant', fuelLiters:'Cantitate (L sau kWh)', fuelPricePerLiter:'Preț unitar (RON)',
+    fuelTotal:'Valoare totală (RON)', fuelOdo:'Km bord la alimentare', btnSaveFuel:'Salvează bonul fiscal',
+    fuelConsumptionReal:'Consum real flotă', fuelConsumptionNorm:'Consum normat',
+    fuelExportExcel:'Export Bonuri în Excel', btnOfficialRoadSheetPDF:'Descarcă PDF (Format Oficial ANAF)',
+    btnOfficialRoadSheetExcel:'Descarcă Excel (Format Oficial ANAF)',
+    backupTitle:'Backup & Restaurare Date', btnBackupDownload:'Descarcă backup complet (JSON)',
+    btnBackupRestore:'Restaurează din fișier JSON', subtabTrips:'Curse', subtabStats:'Analitice & Flotă',
+    subtabBackup:'Backup & Date', searchPlaceholder:'Caută destinație, scop, șofer, număr mașină...',
+    co2Footprint:'Amprentă CO₂', odoAutoHint:'Preluat automat din cursa precedentă',
+    templateTitle:'Șabloane trasee', btnSaveTemplate:'Salvează ca șablon', btnLoadTemplate:'Încarcă șablon',
+    templateSaved:'Șablon salvat cu succes!',
   },
 };
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function getInitialTheme(){const s=localStorage.getItem('fp_theme');return(s==='light'||s==='dark')?s:window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
-function getInitialLang(){const s=localStorage.getItem('fp_lang');return(s==='en'||s==='ro')?s:'en'}
+function getInitialLang(){const s=localStorage.getItem('fp_lang');return(s==='en'||s==='ro')?s:'ro'}
 function today(){return new Date().toISOString().slice(0,10)}
 function fmtDate(iso){if(!iso)return '';const[y,m,d]=iso.split('-');return`${d}.${m}.${y}`}
 function uid(){return Math.random().toString(36).slice(2,9)}
@@ -461,6 +539,12 @@ function loadVehicles(){try{return JSON.parse(localStorage.getItem('fp_vehicles'
 function saveVehicles(v){localStorage.setItem('fp_vehicles',JSON.stringify(v))}
 function loadHistory(){try{return JSON.parse(localStorage.getItem('fp_history')||'[]')}catch{return []}}
 function saveHistory(h){localStorage.setItem('fp_history',JSON.stringify(h))}
+function loadCompany(){try{return JSON.parse(localStorage.getItem('fp_company')||'null')||{name:'',cui:'',regCom:'',address:'',docSeries:'FP',docNumber:'001',approver:''}}catch{return{name:'',cui:'',regCom:'',address:'',docSeries:'FP',docNumber:'001',approver:''}}}
+function saveCompany(c){localStorage.setItem('fp_company',JSON.stringify(c))}
+function loadFuelLogs(){try{return JSON.parse(localStorage.getItem('fp_fuel_logs')||'[]')}catch{return []}}
+function saveFuelLogs(f){localStorage.setItem('fp_fuel_logs',JSON.stringify(f))}
+function loadTemplates(){try{return JSON.parse(localStorage.getItem('fp_route_templates')||'[]')}catch{return []}}
+function saveTemplates(t){localStorage.setItem('fp_route_templates',JSON.stringify(t))}
 
 // ── API ───────────────────────────────────────────────────────────────────────
 function _parseErr(d,fallback){
@@ -474,10 +558,47 @@ function _parseErr(d,fallback){
 async function apiGeocode(q){const r=await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(_parseErr(d,'Geocoding error'))}return(await r.json()).results||[]}
 async function apiReverse(lat,lon){const r=await fetch(`/api/reverse?lat=${lat}&lon=${lon}`);if(!r.ok)return null;return r.json()}
 async function apiRoute(points){const r=await fetch('/api/route',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({points})});if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(_parseErr(d,'Routing error'))}return r.json()}
-async function apiExportExcel(rows,total,dateStr,colTotal){const r=await fetch('/api/export/excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows,total,date_str:dateStr,total_col_label:colTotal})});if(!r.ok)throw new Error('Export error');const blob=await r.blob();_downloadBlob(blob,`foaie_parcurs_${dateStr}.xlsx`)}
-async function apiExportPDF(rows,total,dateStr,title,vehicle,driver,colTotal){const r=await fetch('/api/export/pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows,total,date_str:dateStr,title,vehicle,driver,total_col_label:colTotal})});if(!r.ok)throw new Error('PDF error');const blob=await r.blob();_downloadBlob(blob,`foaie_parcurs_${dateStr}.pdf`)}
+async function apiOptimizeRoute(start,stops,returnToStart=false){
+  const r=await fetch('/api/route/optimize',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({start:[start.lat,start.lon],stops:stops.map(s=>({id:s.id,lat:s.lat,lon:s.lon,text:s.text,display:s.display})),returnToStart})
+  });
+  if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(_parseErr(d,'Eroare optimizare traseu'))}
+  return r.json();
+}
+async function apiExportExcel(rows,total,dateStr,colTotal="Total KM",company=null,vehicle="",driver="",odoStart="",odoEnd=""){
+  const r=await fetch('/api/export/excel',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({rows,total,date_str:dateStr,total_col_label:colTotal,company,vehicle,driver,odo_start:odoStart,odo_end:odoEnd})
+  });
+  if(!r.ok)throw new Error('Export error');
+  const blob=await r.blob();
+  _downloadBlob(blob,`foaie_parcurs_${dateStr}.xlsx`);
+}
+async function apiExportPDF(rows,total,dateStr,title="Foaie de parcurs",vehicle="",driver="",colTotal="Total KM",company=null,fuelRecords=[],odoStart="",odoEnd=""){
+  const r=await fetch('/api/export/pdf',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({rows,total,date_str:dateStr,title,vehicle,driver,total_col_label:colTotal,company,fuel_records:fuelRecords,odo_start:odoStart,odo_end:odoEnd})
+  });
+  if(!r.ok)throw new Error('PDF error');
+  const blob=await r.blob();
+  _downloadBlob(blob,`foaie_parcurs_${dateStr}.pdf`);
+}
+async function apiExportFuel(fuelLogs){
+  const r=await fetch('/api/export/fuel',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fuel_logs:fuelLogs})
+  });
+  if(!r.ok)throw new Error('Eroare export alimentări');
+  const blob=await r.blob();
+  _downloadBlob(blob,`alimentari_${today().replace(/-/g,'')}.xlsx`);
+}
 function _downloadBlob(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
-function exportCSV(rows,dateStr){const cols=Object.keys(rows[0]);const lines=[cols.join(','),...rows.map(r=>cols.map(c=>`"${String(r[c]).replace(/"/g,'""')}"`).join(','))];const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});_downloadBlob(blob,`foaie_parcurs_${dateStr}.csv`)}
+function exportCSV(rows,dateStr){const cols=Object.keys(rows[0]);const lines=[cols.join(','),...rows.map(r=>cols.map(c=>`"${String(r[c]).replace(/"/g,'""')}"`).join(','))];const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});_downloadBlob(blob,`foaie_parcurs_${dateStr}.csv`)}
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const Icon=({name,size=18})=>{const p={width:size,height:size,viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"};const icons={
@@ -510,6 +631,16 @@ const Icon=({name,size=18})=>{const p={width:size,height:size,viewBox:"0 0 24 24
   install:<svg {...p}><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="11" y1="5" x2="13" y2="5"/><path d="M12 9v6"/><polyline points="9.5 12.5 12 15 14.5 12.5"/></svg>,
   apple:<svg {...p}><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06z"/><path d="M10 2c1 .5 2 2 2 5"/></svg>,
   smartphone:<svg {...p}><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
+  // New icons
+  zap:<svg {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  building:<svg {...p}><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="9" y1="22" x2="9" y2="18"/><line x1="15" y1="22" x2="15" y2="18"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/></svg>,
+  chart:<svg {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  clipboard:<svg {...p}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>,
+  waze:<svg {...p}><path d="M12 2C6.48 2 2 6.48 2 12c0 3.1 1.41 5.88 3.63 7.73l-.63 2.27 2.45-.66C8.89 21.73 10.4 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-3 8.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5S7.5 12.83 7.5 12s.67-1.5 1.5-1.5zm6 0c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z"/></svg>,
+  externalLink:<svg {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+  leaf:<svg {...p}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 1 9.2A7 7 0 0 1 11 20z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg>,
+  search:<svg {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  database:<svg {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
 };return icons[name]||null};
 
 // ── AddressInput ──────────────────────────────────────────────────────────────
@@ -655,6 +786,78 @@ function InstallModal({onClose,onNativeInstall,canInstall,t}){
   );
 }
 
+// ── CompanyModal (ANAF) ───────────────────────────────────────────────────────
+function CompanyModal({company,onSave,onClose,t}){
+  const[form,setForm]=useState(company||{name:'',cui:'',regCom:'',address:'',docSeries:'FP',docNumber:'001',approver:''});
+  const set=k=>e=>setForm(p=>({...p,[k]:e.target.value}));
+  const handleSave=()=>{
+    onSave(form);
+    saveCompany(form);
+    onClose();
+  };
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal-box">
+        <div className="modal-title">
+          <span style={{display:'flex',alignItems:'center',gap:8}}><Icon name="building" size={18}/> {t.companyTitle}</span>
+          <button className="btn-icon" onClick={onClose}><Icon name="x" size={16}/></button>
+        </div>
+        <div className="field" style={{marginTop:10}}>
+          <label>{t.companyName}</label>
+          <input type="text" value={form.name||''} onChange={set('name')} placeholder="ex: SC LOGISTICA RAPIDA SRL"/>
+        </div>
+        <div className="field-row">
+          <div className="field"><label>{t.companyCui}</label><input type="text" value={form.cui||''} onChange={set('cui')} placeholder="RO12345678"/></div>
+          <div className="field"><label>{t.companyRegCom}</label><input type="text" value={form.regCom||''} onChange={set('regCom')} placeholder="J40/1234/2020"/></div>
+        </div>
+        <div className="field">
+          <label>{t.companyAddress}</label>
+          <input type="text" value={form.address||''} onChange={set('address')} placeholder="ex: Str. Industriei nr. 10, Sector 1, București"/>
+        </div>
+        <div className="field-row">
+          <div className="field"><label>{t.companyDocSeries}</label><input type="text" value={form.docSeries||''} onChange={set('docSeries')} placeholder="FP"/></div>
+          <div className="field"><label>{t.companyDocNumber}</label><input type="text" value={form.docNumber||''} onChange={set('docNumber')} placeholder="001"/></div>
+        </div>
+        <div className="field">
+          <label>{t.companyApprover}</label>
+          <input type="text" value={form.approver||''} onChange={set('approver')} placeholder="Administrator / Șef coloană auto"/>
+        </div>
+        <button className="btn btn-primary" style={{marginTop:12,height:44}} onClick={handleSave}>
+          <Icon name="save" size={16}/>{t.btnSaveCompany}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── BulkPasteModal ────────────────────────────────────────────────────────────
+function BulkPasteModal({onApply,onClose,t}){
+  const[text,setText]=useState('');
+  const handleApply=()=>{
+    const lines=text.split('\n').map(l=>l.trim()).filter(l=>l.length>=2);
+    if(lines.length){
+      onApply(lines);
+    }
+    onClose();
+  };
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal-box">
+        <div className="modal-title">
+          <span style={{display:'flex',alignItems:'center',gap:8}}><Icon name="clipboard" size={18}/> {t.bulkPasteTitle}</span>
+          <button className="btn-icon" onClick={onClose}><Icon name="x" size={16}/></button>
+        </div>
+        <div className="field" style={{marginTop:10}}>
+          <textarea rows={7} value={text} onChange={e=>setText(e.target.value)} placeholder={t.bulkPastePlaceholder} style={{width:'100%',padding:'10px 12px',borderRadius:'var(--radius-md)',border:'1px solid var(--border)',background:'var(--surface)',color:'var(--text-1)',fontSize:14,fontFamily:'inherit',resize:'vertical',lineHeight:1.4}}/>
+        </div>
+        <button className="btn btn-primary" style={{marginTop:8,height:44}} onClick={handleApply}>
+          <Icon name="plus" size={16}/>{t.btnBulkApply}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── MapView ───────────────────────────────────────────────────────────────────
 function MapView({coords,points,isActive,t}){
   const containerRef=useRef(null);
@@ -734,14 +937,31 @@ function MapView({coords,points,isActive,t}){
 }
 
 // ── RouteView ─────────────────────────────────────────────────────────────────
-function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setCloseLoop,odoStart,setOdoStart,odoEnd,setOdoEnd,vehicles,selectedVehicleId,setSelectedVehicleId,onCalculate,calculating,t}){
+function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setCloseLoop,odoStart,setOdoStart,odoEnd,setOdoEnd,vehicles,selectedVehicleId,setSelectedVehicleId,onCalculate,calculating,t,setFlashMsg}){
   const[geolocating,setGeolocating]=useState(false);
+  const[optimizing,setOptimizing]=useState(false);
+  const[showBulk,setShowBulk]=useState(false);
+  const[templates,setTemplates]=useState(loadTemplates);
+  const[templateName,setTemplateName]=useState('');
+  const[showTmplSave,setShowTmplSave]=useState(false);
+  const[autoOdoApplied,setAutoOdoApplied]=useState(false);
   const dragIdx=useRef(null);
   const[dragOverId,setDragOverId]=useState(null);
 
   const newStop=()=>({id:uid(),text:'',lat:null,lon:null,display:''});
   const updateStop=(id,patch)=>setStops(p=>p.map(s=>s.id===id?{...s,...patch}:s));
   const removeStop=id=>setStops(p=>p.filter(s=>s.id!==id));
+
+  // Auto-chain odometer from latest saved trip for this vehicle
+  useEffect(()=>{
+    if(!selectedVehicleId)return;
+    const hist=loadHistory();
+    const latest=hist.find(h=>(h.vehicleId===selectedVehicleId||h.vehicle===selectedVehicleId)&&h.odoEnd);
+    if(latest && (!odoStart || autoOdoApplied)){
+      setOdoStart(String(latest.odoEnd));
+      setAutoOdoApplied(true);
+    }
+  },[selectedVehicleId]);
 
   const handleGeolocate=()=>{
     if(!navigator.geolocation)return;
@@ -752,6 +972,74 @@ function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setClos
       if(res){setStart({text:res.display,lat:res.lat,lon:res.lon,display:res.display})}
       setGeolocating(false);
     },()=>setGeolocating(false),{timeout:10000});
+  };
+
+  // Optimize route order using TSP 2-Opt
+  const handleOptimize=async()=>{
+    const validStops=stops.filter(s=>s&&s.text&&s.text.trim().length>=2);
+    if(validStops.length<2){
+      setFlashMsg?.(t.errNoStop ? t.errNoStop('min. 2') : 'Adaugă minim 2 opriri pentru optimizare');
+      return;
+    }
+    setOptimizing(true);
+    try{
+      let resStart=start;
+      if(!resStart.lat||!resStart.lon){
+        const g=await apiGeocode(resStart.text);
+        if(g.length)resStart={...resStart,lat:g[0].lat,lon:g[0].lon,display:g[0].display};
+        setStart(resStart);
+      }
+      const resStops=[];
+      for(const s of validStops){
+        if(s.lat&&s.lon){
+          resStops.push(s);
+        } else {
+          const g=await apiGeocode(s.text);
+          if(g.length){
+            resStops.push({...s,lat:g[0].lat,lon:g[0].lon,display:g[0].display});
+          } else {
+            resStops.push(s);
+          }
+        }
+      }
+      setStops(resStops);
+      const opt=await apiOptimizeRoute(resStart,resStops,closeLoop);
+      if(opt&&opt.orderedStops){
+        setStops(opt.orderedStops);
+        if(opt.savings_km>0){
+          setFlashMsg?.(t.msgOptimized(opt.savings_km,opt.savings_pct));
+        } else {
+          setFlashMsg?.(t.badgeCalculated);
+        }
+      }
+    }catch(e){
+      setFlashMsg?.('Eroare optimizare: '+(e.message||e));
+    }
+    setOptimizing(false);
+  };
+
+  const handleBulkApply=(lines)=>{
+    const added=lines.map(line=>({id:uid(),text:line,lat:null,lon:null,display:line}));
+    setStops(prev=>[...prev.filter(s=>s.text&&s.text.trim().length>0),...added]);
+  };
+
+  const handleSaveTemplate=()=>{
+    if(!start.text&&!stops.length)return;
+    const name=templateName.trim()||`Traseu ${new Date().toLocaleDateString()}`;
+    const updated=[{id:uid(),name,start,stops,vehicleId:selectedVehicleId},...templates.filter(x=>x.name!==name)];
+    setTemplates(updated);
+    saveTemplates(updated);
+    setTemplateName('');
+    setShowTmplSave(false);
+    setFlashMsg?.(t.templateSaved);
+  };
+
+  const handleLoadTemplate=tmplId=>{
+    const tmpl=templates.find(x=>x.id===tmplId);
+    if(!tmpl)return;
+    if(tmpl.start)setStart(tmpl.start);
+    if(tmpl.stops)setStops(tmpl.stops.map(s=>({...s,id:uid()})));
+    if(tmpl.vehicleId)setSelectedVehicleId(tmpl.vehicleId);
   };
 
   // Drag handlers
@@ -772,6 +1060,34 @@ function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setClos
 
   return(
     <div className="view">
+      {showBulk&&<BulkPasteModal onApply={handleBulkApply} onClose={()=>setShowBulk(false)} t={t}/>}
+
+      {/* Route Templates Bar */}
+      <div className="card" style={{padding:'12px 16px',marginBottom:12}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
+          <div style={{display:'flex',alignItems:'center',gap:6,fontSize:13,fontWeight:600,color:'var(--text-2)'}}>
+            <Icon name="star" size={14}/> {t.templateTitle}
+          </div>
+          <div style={{display:'flex',gap:6,alignItems:'center'}}>
+            {templates.length>0&&(
+              <select onChange={e=>handleLoadTemplate(e.target.value)} defaultValue="" style={{fontSize:12,padding:'4px 8px',borderRadius:6,border:'1px solid var(--border)',background:'var(--surface)',color:'var(--text-1)'}}>
+                <option value="" disabled>{t.btnLoadTemplate} ({templates.length})</option>
+                {templates.map(tmp=><option key={tmp.id} value={tmp.id}>{tmp.name}</option>)}
+              </select>
+            )}
+            <button className="btn btn-outline btn-sm" onClick={()=>setShowTmplSave(!showTmplSave)} style={{fontSize:11,height:28,padding:'0 8px'}}>
+              <Icon name="save" size={12}/> {t.btnSaveTemplate}
+            </button>
+          </div>
+        </div>
+        {showTmplSave&&(
+          <div style={{display:'flex',gap:6,marginTop:8}}>
+            <input type="text" value={templateName} onChange={e=>setTemplateName(e.target.value)} placeholder="ex: Livrare București Nord" style={{flex:1,fontSize:13,padding:'6px 10px'}}/>
+            <button className="btn btn-primary btn-sm" onClick={handleSaveTemplate} style={{width:'auto',height:34}}>{t.btnSaveVehicle}</button>
+          </div>
+        )}
+      </div>
+
       <div className="card">
         <div className="card-title"><span className="card-title-dot"/>{t.sectionDate}</div>
         <div className="field"><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></div>
@@ -804,7 +1120,13 @@ function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setClos
       </div>
 
       <div className="card">
-        <div className="card-title"><span className="card-title-dot"/>{t.sectionStops} · {stops.length}</div>
+        <div className="card-title">
+          <span className="card-title-dot"/>
+          <span style={{flex:1}}>{t.sectionStops} · {stops.length}</span>
+          <button className="btn btn-outline btn-sm" onClick={handleOptimize} disabled={stops.length<2||optimizing} title="Optimizează ordinea opririlor pentru km minimi (TSP)" style={{width:'auto',height:30,padding:'0 10px',fontSize:12,borderColor:'var(--accent)',color:'var(--accent)'}}>
+            <Icon name="zap" size={13}/>{optimizing?t.btnOptimizing:t.btnOptimize}
+          </button>
+        </div>
         {stops.map((s,i)=>(
           <div key={s.id}
             className={`stop-item${dragOverId===s.id?' drag-over':''}`}
@@ -818,7 +1140,17 @@ function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setClos
                 <span className="drag-handle"><Icon name="grip" size={16}/></span>
                 <span className="stop-num">{i+1}</span>{t.stopLabel}
               </span>
-              <div className="stop-actions">
+              <div className="stop-actions" style={{display:'flex',alignItems:'center',gap:4}}>
+                {(s.display||s.text)&&(
+                  <>
+                    <a href={`https://waze.com/ul?q=${encodeURIComponent(s.display||s.text)}&navigate=yes`} target="_blank" rel="noopener noreferrer" className="btn-nav-app btn-waze" title="Deschide în Waze" style={{height:24,padding:'0 6px',fontSize:10}}>
+                      <Icon name="waze" size={12}/> Waze
+                    </a>
+                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.display||s.text)}`} target="_blank" rel="noopener noreferrer" className="btn-nav-app btn-gmaps" title="Deschide în Google Maps" style={{height:24,padding:'0 6px',fontSize:10}}>
+                      <Icon name="externalLink" size={11}/> Maps
+                    </a>
+                  </>
+                )}
                 <button className="btn-icon" disabled={i===0} onClick={()=>setStops(p=>{const a=[...p];[a[i],a[i-1]]=[a[i-1],a[i]];return a})} aria-label="Sus"><Icon name="arrowUp" size={14}/></button>
                 <button className="btn-icon" disabled={i===stops.length-1} onClick={()=>setStops(p=>{const a=[...p];[a[i],a[i+1]]=[a[i+1],a[i]];return a})} aria-label="Jos"><Icon name="arrowDown" size={14}/></button>
                 <button className="btn-icon danger" onClick={()=>removeStop(s.id)} aria-label="Șterge"><Icon name="x" size={14}/></button>
@@ -830,7 +1162,14 @@ function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setClos
               placeholder={t.placeholderStop}/>
           </div>
         ))}
-        <button className="btn-add-stop" onClick={()=>setStops(p=>[...p,newStop()])}><Icon name="plus" size={16}/>{t.btnAddStop}</button>
+        <div style={{display:'flex',gap:8,marginTop:8}}>
+          <button className="btn-add-stop" style={{flex:1}} onClick={()=>setStops(p=>[...p,newStop()])}>
+            <Icon name="plus" size={16}/>{t.btnAddStop}
+          </button>
+          <button className="btn btn-outline" style={{width:'auto',padding:'0 16px',height:46}} onClick={()=>setShowBulk(true)} title={t.btnBulkPaste}>
+            <Icon name="clipboard" size={16}/>
+          </button>
+        </div>
       </div>
 
       <div className="card">
@@ -839,11 +1178,15 @@ function RouteView({date,setDate,start,setStart,stops,setStops,closeLoop,setClos
       </div>
 
       <div className="card">
-        <div className="card-title"><span className="card-title-dot"/>{t.sectionOdometer}</div>
+        <div className="card-title">
+          <span className="card-title-dot"/>
+          <span>{t.sectionOdometer}</span>
+          {autoOdoApplied&&<span style={{fontSize:11,color:'var(--accent)',fontWeight:600,marginLeft:'auto'}}>{t.odoAutoHint}</span>}
+        </div>
         <div className="odo-row">
           <div className="field" style={{marginBottom:0}}>
             <label>{t.odoStart}</label>
-            <input type="number" value={odoStart} onChange={e=>setOdoStart(e.target.value)} placeholder="ex: 12345" min="0"/>
+            <input type="number" value={odoStart} onChange={e=>{setOdoStart(e.target.value);setAutoOdoApplied(false)}} placeholder="ex: 12345" min="0"/>
           </div>
           <div className="field" style={{marginBottom:0}}>
             <label>{t.odoEnd}</label>
@@ -892,6 +1235,10 @@ function SegmentsView({segments,segOpts,setSegOpts,vehicles,selectedVehicleId,on
   };
   const totalCost=calcCost(total);
 
+  // Carbon footprint estimate: ~2.39 kg CO2 per liter of fuel
+  const lpk = vehicle?.consumption ? parseFloat(vehicle.consumption) : 7.0;
+  const co2Kg = kmRound((total * lpk / 100) * 2.39);
+
   // ── Transport schedule (backward from final arrival time) ──
   const hasDurations=segments.every(s=>typeof s.min==='number');
   const stopMinNum=Math.max(0,parseInt(stopMin,10)||0);
@@ -925,8 +1272,28 @@ function SegmentsView({segments,segOpts,setSegOpts,vehicles,selectedVehicleId,on
             <div className="total-label">{t.totalDistance}</div>
             <div><span className="total-value">{kmRound(total).toFixed(1)}</span><span className="total-unit">km</span></div>
             {totalCost!=null&&<div className="total-cost-sub">{t.totalCost}: {totalCost.toFixed(2)} RON</div>}
+            {co2Kg>0&&(
+              <div style={{marginTop:8,display:'inline-flex',alignItems:'center',gap:6,background:'rgba(16,185,129,0.12)',color:'#10B981',padding:'3px 10px',borderRadius:20,fontSize:12,fontWeight:600}}>
+                <Icon name="leaf" size={13}/> {t.co2Emissions}: ~{co2Kg.toFixed(1)} kg CO₂
+              </div>
+            )}
           </div>
           <div className="total-hero-icon"><Icon name="car" size={26}/></div>
+        </div>
+      </div>
+
+      {/* External Navigation Shortcuts */}
+      <div className="card" style={{padding:'12px 16px',marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:600,color:'var(--text-2)',marginBottom:8,display:'flex',alignItems:'center',gap:6}}>
+          <Icon name="externalLink" size={14}/> {t.navigationTitle}
+        </div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <a href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(segments[0].from)}&destination=${encodeURIComponent(segments[segments.length-1].to)}&waypoints=${encodeURIComponent(segments.slice(0,-1).map(s=>s.to).join('|'))}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm btn-gmaps" style={{flex:1,minWidth:140,textDecoration:'none',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6}}>
+            <Icon name="externalLink" size={14}/> {t.openGoogleMaps}
+          </a>
+          <a href={`https://waze.com/ul?q=${encodeURIComponent(segments[0].to)}&navigate=yes`} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm btn-waze" style={{flex:1,minWidth:140,textDecoration:'none',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6}}>
+            <Icon name="waze" size={14}/> {t.openWaze}
+          </a>
         </div>
       </div>
 
@@ -1000,8 +1367,172 @@ function SegmentsView({segments,segOpts,setSegOpts,vehicles,selectedVehicleId,on
   );
 }
 
+// ── FuelView ──────────────────────────────────────────────────────────────────
+function FuelView({vehicles,selectedVehicleId,fuelLogs,setFuelLogs,company,t,flash}){
+  const blank={id:'',date:today(),vehicleId:selectedVehicleId||(vehicles[0]?.id||''),receiptNo:'',vendor:'Petrom',fuelType:'Motorină Standard',liters:'',pricePerLiter:'',amount:'',odometer:''};
+  const[form,setForm]=useState(blank);
+  const[exporting,setExporting]=useState(false);
+
+  useEffect(()=>{
+    if(selectedVehicleId && !form.vehicleId){
+      setForm(p=>({...p,vehicleId:selectedVehicleId}));
+    }
+  },[selectedVehicleId]);
+
+  const set=k=>e=>{
+    const v=e.target.value;
+    setForm(p=>{
+      const next={...p,[k]:v};
+      if(k==='liters'||k==='pricePerLiter'){
+        const l=parseFloat(k==='liters'?v:next.liters);
+        const pr=parseFloat(k==='pricePerLiter'?v:next.pricePerLiter);
+        if(!isNaN(l)&&!isNaN(pr)&&l>0&&pr>0){
+          next.amount=(l*pr).toFixed(2);
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleSave=()=>{
+    if(!form.liters||parseFloat(form.liters)<=0)return;
+    const entry={
+      ...form,
+      id:form.id||uid(),
+      liters:parseFloat(form.liters)||0,
+      pricePerLiter:parseFloat(form.pricePerLiter)||0,
+      amount:parseFloat(form.amount)||0,
+      odometer:form.odometer?parseInt(form.odometer,10):null,
+      createdAt:new Date().toISOString(),
+    };
+    const updated=[entry,...fuelLogs.filter(x=>x.id!==entry.id)];
+    setFuelLogs(updated);
+    saveFuelLogs(updated);
+    setForm({...blank,vehicleId:selectedVehicleId||(vehicles[0]?.id||'')});
+    flash(t.fuelLogSaved);
+  };
+
+  const handleDelete=id=>{
+    if(window.confirm(t.deleteConfirm||'Sigur dorești să ștergi acest bon?')){
+      const updated=fuelLogs.filter(x=>x.id!==id);
+      setFuelLogs(updated);
+      saveFuelLogs(updated);
+    }
+  };
+
+  const handleExport=async()=>{
+    if(!fuelLogs.length)return;
+    setExporting(true);
+    try{
+      await apiExportFuel(fuelLogs,company);
+      flash(t.msgExcel);
+    }catch(e){
+      flash('Eroare export: '+e.message);
+    }
+    setExporting(false);
+  };
+
+  const totalSpent=fuelLogs.reduce((s,f)=>s+(f.amount||0),0);
+  const totalLiters=fuelLogs.reduce((s,f)=>s+(f.liters||0),0);
+
+  return(
+    <div className="view">
+      <div className="stats-grid">
+        <div className="stat-box">
+          <div className="stat-box-val">{fuelLogs.length}</div>
+          <div className="stat-box-lbl">{t.fuelReceiptsCount}</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-box-val">{totalLiters.toFixed(1)} L</div>
+          <div className="stat-box-lbl">{t.fuelTotalLiters}</div>
+        </div>
+        <div className="stat-box">
+          <div className="stat-box-val">{totalSpent.toFixed(0)} <span style={{fontSize:13}}>RON</span></div>
+          <div className="stat-box-lbl">{t.fuelTotalSpent}</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">
+          <span className="card-title-dot"/>
+          <span>{t.fuelAddReceipt}</span>
+        </div>
+        <div className="field-row">
+          <div className="field"><label>{t.fuelDate}</label><input type="date" value={form.date} onChange={set('date')}/></div>
+          <div className="field"><label>{t.sectionVehicle}</label>
+            <select value={form.vehicleId} onChange={set('vehicleId')}>
+              <option value="">{t.noVehicle}</option>
+              {vehicles.map(v=><option key={v.id} value={v.id}>{v.name}{v.plate?` · ${v.plate}`:''}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="field-row">
+          <div className="field"><label>{t.fuelReceiptNo}</label><input type="text" value={form.receiptNo} onChange={set('receiptNo')} placeholder="ex: 1042 / BON-09"/></div>
+          <div className="field"><label>{t.fuelVendor}</label><input type="text" value={form.vendor} onChange={set('vendor')} placeholder="ex: OMV, Petrom, Rompetrol, MOL"/></div>
+        </div>
+        <div className="field-row">
+          <div className="field"><label>{t.fuelType}</label>
+            <select value={form.fuelType} onChange={set('fuelType')}>
+              <option value="Motorină Standard">Motorină Standard</option>
+              <option value="Motorină Premium">Motorină Premium</option>
+              <option value="Benzină 95">Benzină 95</option>
+              <option value="Benzină 98/100">Benzină 98/100</option>
+              <option value="GPL">GPL</option>
+              <option value="Electricitate">Electricitate (kWh)</option>
+            </select>
+          </div>
+          <div className="field"><label>{t.fuelOdoAtRefill}</label><input type="number" value={form.odometer} onChange={set('odometer')} placeholder="ex: 125000" min="0"/></div>
+        </div>
+        <div className="field-row">
+          <div className="field"><label>{t.fuelLiters}</label><input type="number" step="0.01" value={form.liters} onChange={set('liters')} placeholder="ex: 50.00" min="0"/></div>
+          <div className="field"><label>{t.fuelPricePerLiter}</label><input type="number" step="0.01" value={form.pricePerLiter} onChange={set('pricePerLiter')} placeholder="ex: 7.35" min="0"/></div>
+          <div className="field"><label>{t.fuelAmount}</label><input type="number" step="0.01" value={form.amount} onChange={set('amount')} placeholder="ex: 367.50" min="0"/></div>
+        </div>
+        <button className="btn btn-primary" style={{marginTop:6,height:44}} onClick={handleSave}>
+          <Icon name="plus" size={16}/>{t.btnSaveFuel}
+        </button>
+      </div>
+
+      <div className="card">
+        <div className="card-title" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{display:'flex',alignItems:'center',gap:8}}><span className="card-title-dot"/>{t.fuelHistoryTitle} · {fuelLogs.length}</span>
+          {fuelLogs.length>0&&(
+            <button className="btn btn-outline btn-sm" onClick={handleExport} disabled={exporting} style={{fontSize:12,padding:'0 10px',height:30}}>
+              <Icon name="sheet" size={14}/> {t.btnExportFuel}
+            </button>
+          )}
+        </div>
+        {fuelLogs.length===0?(
+          <div style={{textAlign:'center',padding:'24px 0',color:'var(--text-3)',fontSize:14}}>
+            {t.fuelEmpty}
+          </div>
+        ):(
+          fuelLogs.map(f=>{
+            const veh=vehicles.find(v=>v.id===f.vehicleId);
+            return(
+              <div key={f.id} className="history-item" style={{marginBottom:10}}>
+                <div className="history-header" style={{cursor:'default'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div className="history-date">{fmtDate(f.date)} · <span style={{fontWeight:600,color:'var(--text-1)'}}>{f.vendor||'Benzinărie'}</span> {f.receiptNo?`(#${f.receiptNo})`:''}</div>
+                    <div className="history-vehicle">{[veh?.name,veh?.plate,f.fuelType,f.odometer?`${f.odometer} km`:null].filter(Boolean).join(' · ')}</div>
+                  </div>
+                  <div style={{textAlign:'right',marginRight:10}}>
+                    <div className="history-km">{f.amount ? f.amount.toFixed(2) : '0.00'} RON</div>
+                    <div className="history-cost">{f.liters ? f.liters.toFixed(2) : '0'} L {f.pricePerLiter?`(@ ${f.pricePerLiter} RON/L)`:''}</div>
+                  </div>
+                  <button className="btn-icon danger" onClick={()=>handleDelete(f.id)} title="Șterge bon"><Icon name="trash" size={14}/></button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── ExportView ────────────────────────────────────────────────────────────────
-function ExportView({segments,segOpts,date,start,stops,vehicles,selectedVehicleId,setStart,setStops,setSegments,setSegOpts,setTab,t,lang}){
+function ExportView({segments,segOpts,date,start,stops,vehicles,selectedVehicleId,setStart,setStops,setSegments,setSegOpts,setTab,company,odoStart,odoEnd,fuelLogs,t,lang}){
   const[favName,setFavName]=useState('');
   const[favorites,setFavorites]=useState(()=>{try{return JSON.parse(localStorage.getItem('fp_favorites')||'{}')}catch{return{}}});
   const[exporting,setExporting]=useState(false);
@@ -1023,8 +1554,28 @@ function ExportView({segments,segOpts,date,start,stops,vehicles,selectedVehicleI
   const flash=m=>{setMsg(m);setTimeout(()=>setMsg(''),3500)};
 
   const handleCSV=()=>{if(!segments.length)return;exportCSV(buildRows(),dateStr);flash(t.msgCSV)};
-  const handleExcel=async()=>{if(!segments.length)return;setExporting(true);try{await apiExportExcel(buildRows(),total,dateStr,t.colTotal);flash(t.msgExcel)}catch(e){flash('Eroare: '+e.message)}setExporting(false)};
-  const handlePDF=async()=>{if(!segments.length)return;setExporting(true);try{await apiExportPDF(buildRows(),total,dateStr,t.appTitle,vehicle?`${vehicle.name} ${vehicle.plate||''}`.trim():'',vehicle?.driver||'',t.colTotal);flash(t.msgPDF)}catch(e){flash('Eroare: '+e.message)}setExporting(false)};
+  const handleExcel=async()=>{
+    if(!segments.length)return;
+    setExporting(true);
+    try{
+      await apiExportExcel(buildRows(),total,dateStr,t.colTotal,company,vehicle?`${vehicle.name} ${vehicle.plate||''}`.trim():'',vehicle?.driver||'',odoStart,odoEnd,fuelLogs);
+      flash(t.msgExcel);
+    }catch(e){
+      flash('Eroare: '+e.message);
+    }
+    setExporting(false);
+  };
+  const handlePDF=async()=>{
+    if(!segments.length)return;
+    setExporting(true);
+    try{
+      await apiExportPDF(buildRows(),total,dateStr,t.appTitle,vehicle?`${vehicle.name} ${vehicle.plate||''}`.trim():'',vehicle?.driver||'',t.colTotal,company,odoStart,odoEnd,fuelLogs);
+      flash(t.msgPDF);
+    }catch(e){
+      flash('Eroare: '+e.message);
+    }
+    setExporting(false);
+  };
 
   const handleShare=async()=>{
     const enc=encodeRoute(start,stops);
@@ -1081,16 +1632,28 @@ function ExportView({segments,segOpts,date,start,stops,vehicles,selectedVehicleI
   const handleMonthlyExcel=async()=>{
     if(!monthlyRows.length)return;
     setExporting(true);
-    try{await apiExportExcel(monthlyRows,monthlyTotal,selMonth.replace('-',''),t.colTotal);flash(t.msgExcel)}catch(e){flash('Eroare: '+e.message)}
+    const vehLabel=vehicle?`${vehicle.name} ${vehicle.plate||''}`.trim():'';
+    const drvLabel=vehicle?.driver||'';
+    try{
+      await apiExportExcel(monthlyRows,monthlyTotal,selMonth.replace('-',''),t.colTotal,company,vehLabel,drvLabel,null,null,fuelLogs);
+      flash(t.msgExcel);
+    }catch(e){
+      flash('Eroare: '+e.message);
+    }
     setExporting(false);
   };
 
   const handleMonthlyPDF=async()=>{
     if(!monthlyRows.length)return;
     setExporting(true);
-    const vehLabel = vehicle ? `${vehicle.name} ${vehicle.plate||''}`.trim() : '';
-    const drvLabel = vehicle?.driver || '';
-    try{await apiExportPDF(monthlyRows,monthlyTotal,selMonth.replace('-',''),`${t.appTitle} - ${fmtMonth(selMonth)}`,vehLabel,drvLabel,t.colTotal);flash(t.msgPDF)}catch(e){flash('Eroare: '+e.message)}
+    const vehLabel=vehicle?`${vehicle.name} ${vehicle.plate||''}`.trim():'';
+    const drvLabel=vehicle?.driver||'';
+    try{
+      await apiExportPDF(monthlyRows,monthlyTotal,selMonth.replace('-',''),`${t.appTitle} - ${fmtMonth(selMonth)}`,vehLabel,drvLabel,t.colTotal,company,null,null,fuelLogs);
+      flash(t.msgPDF);
+    }catch(e){
+      flash('Eroare: '+e.message);
+    }
     setExporting(false);
   };
 
@@ -1180,13 +1743,28 @@ function ExportView({segments,segOpts,date,start,stops,vehicles,selectedVehicleI
 }
 
 // ── HistoryView ───────────────────────────────────────────────────────────────
-function HistoryView({vehicles,setTab,t}){
+function HistoryView({vehicles,setTab,company,fuelLogs,templates,t,flash}){
   const[history,setHistory]=useState(loadHistory);
   const[filterMonth,setFilterMonth]=useState('');
+  const[searchQuery,setSearchQuery]=useState('');
   const[expanded,setExpanded]=useState({});
+  const[subTab,setSubTab]=useState('trips');
 
   const months=[...new Set(history.map(h=>h.date.slice(0,7)))].sort().reverse();
-  const filtered=filterMonth?history.filter(h=>h.date.startsWith(filterMonth)):history;
+
+  // Search & month filtering
+  const filtered=history.filter(h=>{
+    if(filterMonth && !h.date.startsWith(filterMonth)) return false;
+    if(searchQuery.trim()){
+      const q = searchQuery.toLowerCase();
+      const matchVeh = (h.vehicle||'').toLowerCase().includes(q) || (h.driver||'').toLowerCase().includes(q);
+      const matchSegs = (h.segments||[]).some(s=> (s.from||'').toLowerCase().includes(q) || (s.to||'').toLowerCase().includes(q) || (s.purpose||'').toLowerCase().includes(q));
+      const matchDate = fmtDate(h.date).toLowerCase().includes(q);
+      if(!matchVeh && !matchSegs && !matchDate) return false;
+    }
+    return true;
+  });
+
   const sorted=[...filtered].sort((a,b)=>b.date.localeCompare(a.date));
 
   const totalKm=sorted.reduce((s,h)=>s+(h.totalKm ?? h.total_km ?? 0),0);
@@ -1201,82 +1779,230 @@ function HistoryView({vehicles,setTab,t}){
 
   const toggle=id=>setExpanded(p=>({...p,[id]:!p[id]}));
 
-  if(!history.length){
-    return(
-      <div className="view">
-        <div className="empty-state">
-          <div className="empty-icon"><Icon name="clock" size={32}/></div>
-          <div className="empty-title">{t.emptyHistoryTitle}</div>
-          <div className="empty-sub">{t.emptyHistorySub}</div>
-          <div style={{marginTop:22}}><button className="btn btn-outline" style={{width:'auto',padding:'0 28px'}} onClick={()=>setTab('route')}>{t.goToRoute}</button></div>
-        </div>
-      </div>
-    );
-  }
+  // Full backup & restore handlers
+  const handleFullBackup=()=>{
+    const data={
+      version:'2.0',
+      exportedAt:new Date().toISOString(),
+      company:loadCompany(),
+      vehicles:loadVehicles(),
+      history:loadHistory(),
+      fuelLogs:loadFuelLogs(),
+      templates:loadTemplates(),
+      favorites:(()=>{try{return JSON.parse(localStorage.getItem('fp_favorites')||'{}')}catch{return{}}})(),
+    };
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    _downloadBlob(blob,`backup_triplog_${today().replace(/-/g,'')}.json`);
+    flash?.(t.backupSuccess);
+  };
+
+  const handleFullRestore=e=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(data && typeof data==='object'){
+          if(Array.isArray(data.history)) { saveHistory(data.history); setHistory(data.history); }
+          if(Array.isArray(data.vehicles)) saveVehicles(data.vehicles);
+          if(Array.isArray(data.fuelLogs)) saveFuelLogs(data.fuelLogs);
+          if(data.company) saveCompany(data.company);
+          if(Array.isArray(data.templates)) saveTemplates(data.templates);
+          if(data.favorites) localStorage.setItem('fp_favorites',JSON.stringify(data.favorites));
+          flash?.(t.restoreSuccess);
+        } else {
+          flash?.(t.msgInvalidFile);
+        }
+      }catch(err){
+        flash?.(t.msgInvalidFile);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value='';
+  };
+
+  // Fleet analytics aggregations
+  const vehicleStats={};
+  vehicles.forEach(v=>{ vehicleStats[v.id]={name:v.name,plate:v.plate||'',km:0,trips:0,cost:0}; });
+  history.forEach(h=>{
+    const vid=h.vehicleId||'other';
+    if(!vehicleStats[vid]) vehicleStats[vid]={name:h.vehicle||'Vehicul nespecificat',plate:'',km:0,trips:0,cost:0};
+    vehicleStats[vid].km += (h.totalKm ?? h.total_km ?? 0);
+    vehicleStats[vid].trips += 1;
+    vehicleStats[vid].cost += (h.totalCost ?? h.total_cost ?? 0);
+  });
+  const vehList=Object.values(vehicleStats).filter(v=>v.km>0 || v.trips>0);
+  const maxVehKm=Math.max(...vehList.map(v=>v.km),1);
+
+  // Monthly stats
+  const monthlyKmMap={};
+  history.forEach(h=>{
+    const m=h.date.slice(0,7);
+    monthlyKmMap[m]=(monthlyKmMap[m]||0)+(h.totalKm ?? h.total_km ?? 0);
+  });
+  const monthKeys=Object.keys(monthlyKmMap).sort().reverse().slice(0,6);
+  const maxMonthKm=Math.max(...monthKeys.map(k=>monthlyKmMap[k]),1);
 
   return(
     <div className="view">
-      <div className="card" style={{marginBottom:14}}>
-        <div className="field" style={{marginBottom:0}}>
-          <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)}>
-            <option value="">{t.allMonths}</option>
-            {months.map(m=><option key={m} value={m}>{fmtMonth(m)}</option>)}
-          </select>
-        </div>
+      {/* Sub tabs */}
+      <div style={{display:'flex',gap:8,marginBottom:14,background:'var(--surface-2)',padding:4,borderRadius:'var(--radius-md)'}}>
+        <button className={`btn btn-sm ${subTab==='trips'?'btn-primary':'btn-outline'}`} style={{flex:1,border:'none',height:34}} onClick={()=>setSubTab('trips')}>
+          <Icon name="clock" size={14}/> {t.tabHistory}
+        </button>
+        <button className={`btn btn-sm ${subTab==='analytics'?'btn-primary':'btn-outline'}`} style={{flex:1,border:'none',height:34}} onClick={()=>setSubTab('analytics')}>
+          <Icon name="chart" size={14}/> {t.analyticsTitle}
+        </button>
+        <button className={`btn btn-sm ${subTab==='backup'?'btn-primary':'btn-outline'}`} style={{flex:1,border:'none',height:34}} onClick={()=>setSubTab('backup')}>
+          <Icon name="database" size={14}/> {t.backupTitle}
+        </button>
       </div>
 
-      <div className="stats-grid">
-        <div className="stat-box"><div className="stat-box-val">{sorted.length}</div><div className="stat-box-lbl">{t.tripsCount}</div></div>
-        <div className="stat-box"><div className="stat-box-val">{kmRound(totalKm).toFixed(1)}</div><div className="stat-box-lbl">{t.historyTotalKm}</div></div>
-        <div className="stat-box"><div className="stat-box-val">{totalCost>0?totalCost.toFixed(0)+'':'—'}</div><div className="stat-box-lbl">{t.historyTotalCost}</div></div>
-      </div>
-
-      {sorted.map(h=>{
-        const hKm = h.totalKm ?? h.total_km ?? 0;
-        const hCost = h.totalCost ?? h.total_cost ?? 0;
-        const hVeh = h.vehicle || h.vehicleName || '';
-        return(
-          <div key={h.id} className="history-item">
-            <div className="history-header" onClick={()=>toggle(h.id)}>
-              <div style={{flex:1,minWidth:0}}>
-                <div className="history-date">{fmtDate(h.date)}</div>
-                <div className="history-vehicle">{[hVeh,h.driver].filter(Boolean).join(' · ')||'—'}</div>
-              </div>
-              <div style={{textAlign:'right',marginRight:10}}>
-                <div className="history-km">{hKm.toFixed(1)} km</div>
-                {hCost>0&&<div className="history-cost">{hCost.toFixed(2)} RON</div>}
-              </div>
-              <Icon name={expanded[h.id]?'chevronUp':'chevronDown'} size={16}/>
-            </div>
-            {expanded[h.id]&&(
-              <div className="history-body">
-                {(h.segments||[]).map((seg,i)=>{
-                  const opt=(h.segOpts||[])[i]||{};
-                  const km=seg.km != null ? seg.km : (seg.km_oneway ? kmRound(seg.km_oneway*(opt.roundTrip?2:1)*(opt.reps||1)) : 0);
-                  const purpose=seg.purpose || opt.purpose || '';
-                  return(
-                    <div key={i} className="history-seg">
-                      <div style={{flex:1,minWidth:0}}>
-                        <div>{seg.from} → {seg.to}</div>
-                        {purpose&&<div className="history-purpose">{purpose}</div>}
-                      </div>
-                      <div style={{fontWeight:700,color:'var(--accent)',marginLeft:12,whiteSpace:'nowrap'}}>{km.toFixed(1)} km</div>
-                    </div>
-                  );
-                })}
-                {(h.odoStart||h.odoEnd)&&(
-                  <div style={{fontSize:12,color:'var(--text-3)',marginTop:8}}>
-                    Odometru: {h.odoStart||'—'} → {h.odoEnd||'—'} km
+      {subTab==='trips'&&(
+        <>
+          <div className="card" style={{marginBottom:14}}>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <div className="field" style={{flex:1,minWidth:160,marginBottom:0}}>
+                <div className="input-wrap">
+                  <input type="text" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder={t.searchPlaceholder} style={{paddingLeft:34}}/>
+                  <div style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text-3)',pointerEvents:'none'}}>
+                    <Icon name="search" size={14}/>
                   </div>
-                )}
-                <div className="history-actions">
-                  <button className="btn-icon danger" onClick={()=>deleteTrip(h.id)} title={t.deleteConfirm || 'Șterge'}><Icon name="trash" size={14}/></button>
                 </div>
               </div>
+              <div className="field" style={{width:140,marginBottom:0}}>
+                <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)}>
+                  <option value="">{t.allMonths}</option>
+                  {months.map(m=><option key={m} value={m}>{fmtMonth(m)}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="stats-grid">
+            <div className="stat-box"><div className="stat-box-val">{sorted.length}</div><div className="stat-box-lbl">{t.tripsCount}</div></div>
+            <div className="stat-box"><div className="stat-box-val">{kmRound(totalKm).toFixed(1)}</div><div className="stat-box-lbl">{t.historyTotalKm}</div></div>
+            <div className="stat-box"><div className="stat-box-val">{totalCost>0?totalCost.toFixed(0)+'':'—'}</div><div className="stat-box-lbl">{t.historyTotalCost}</div></div>
+          </div>
+
+          {sorted.length===0?(
+            <div style={{textAlign:'center',padding:'30px 0',color:'var(--text-3)',fontSize:14}}>
+              {t.emptyHistoryTitle}
+            </div>
+          ):(
+            sorted.map(h=>{
+              const hKm = h.totalKm ?? h.total_km ?? 0;
+              const hCost = h.totalCost ?? h.total_cost ?? 0;
+              const hVeh = h.vehicle || h.vehicleName || '';
+              return(
+                <div key={h.id} className="history-item">
+                  <div className="history-header" onClick={()=>toggle(h.id)}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="history-date">{fmtDate(h.date)}</div>
+                      <div className="history-vehicle">{[hVeh,h.driver].filter(Boolean).join(' · ')||'—'}</div>
+                    </div>
+                    <div style={{textAlign:'right',marginRight:10}}>
+                      <div className="history-km">{hKm.toFixed(1)} km</div>
+                      {hCost>0&&<div className="history-cost">{hCost.toFixed(2)} RON</div>}
+                    </div>
+                    <Icon name={expanded[h.id]?'chevronUp':'chevronDown'} size={16}/>
+                  </div>
+                  {expanded[h.id]&&(
+                    <div className="history-body">
+                      {(h.segments||[]).map((seg,i)=>{
+                        const opt=(h.segOpts||[])[i]||{};
+                        const km=seg.km != null ? seg.km : (seg.km_oneway ? kmRound(seg.km_oneway*(opt.roundTrip?2:1)*(opt.reps||1)) : 0);
+                        const purpose=seg.purpose || opt.purpose || '';
+                        return(
+                          <div key={i} className="history-seg">
+                            <div style={{flex:1,minWidth:0}}>
+                              <div>{seg.from} → {seg.to}</div>
+                              {purpose&&<div className="history-purpose">{purpose}</div>}
+                            </div>
+                            <div style={{fontWeight:700,color:'var(--accent)',marginLeft:12,whiteSpace:'nowrap'}}>{km.toFixed(1)} km</div>
+                          </div>
+                        );
+                      })}
+                      {(h.odoStart||h.odoEnd)&&(
+                        <div style={{fontSize:12,color:'var(--text-3)',marginTop:8}}>
+                          Odometru: {h.odoStart||'—'} → {h.odoEnd||'—'} km
+                        </div>
+                      )}
+                      <div className="history-actions">
+                        <button className="btn-icon danger" onClick={()=>deleteTrip(h.id)} title={t.deleteConfirm || 'Șterge'}><Icon name="trash" size={14}/></button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </>
+      )}
+
+      {subTab==='analytics'&&(
+        <>
+          <div className="card">
+            <div className="card-title"><span className="card-title-dot"/>{t.analyticsFleetKm}</div>
+            {vehList.length===0?(
+              <div style={{textAlign:'center',padding:'16px 0',color:'var(--text-3)',fontSize:14}}>{t.analyticsNoData}</div>
+            ):(
+              vehList.map((v,idx)=>(
+                <div key={idx} style={{marginBottom:14}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:13,fontWeight:600,marginBottom:4}}>
+                    <span>{v.name} {v.plate?`(${v.plate})`:''}</span>
+                    <span style={{color:'var(--accent)'}}>{v.km.toFixed(1)} km ({v.trips} curse)</span>
+                  </div>
+                  <div className="chart-bar">
+                    <div className="chart-bar-fill" style={{width:`${Math.round((v.km/maxVehKm)*100)}%`}}/>
+                  </div>
+                </div>
+              ))
             )}
           </div>
-        );
-      })}
+
+          <div className="card">
+            <div className="card-title"><span className="card-title-dot"/>{t.analyticsMonthly}</div>
+            {monthKeys.length===0?(
+              <div style={{textAlign:'center',padding:'16px 0',color:'var(--text-3)',fontSize:14}}>{t.analyticsNoData}</div>
+            ):(
+              monthKeys.map((m,idx)=>{
+                const km=monthlyKmMap[m]||0;
+                return(
+                  <div key={idx} style={{marginBottom:14}}>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:13,fontWeight:600,marginBottom:4}}>
+                      <span>{fmtMonth(m)}</span>
+                      <span style={{color:'var(--accent)'}}>{km.toFixed(1)} km</span>
+                    </div>
+                    <div className="chart-bar">
+                      <div className="chart-bar-fill" style={{width:`${Math.round((km/maxMonthKm)*100)}%`}}/>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </>
+      )}
+
+      {subTab==='backup'&&(
+        <div className="card">
+          <div className="card-title"><span className="card-title-dot"/>{t.backupTitle}</div>
+          <p style={{fontSize:14,color:'var(--text-2)',lineHeight:1.5,marginBottom:16}}>
+            {t.backupDesc}
+          </p>
+          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            <button className="btn btn-primary" onClick={handleFullBackup} style={{height:44}}>
+              <Icon name="download" size={16}/> {t.btnDownloadBackup}
+            </button>
+            <label className="btn btn-outline" style={{cursor:'pointer',height:44,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8}}>
+              <Icon name="upload" size={16}/> {t.btnRestoreBackup}
+              <input type="file" accept=".json" style={{display:'none'}} onChange={handleFullRestore}/>
+            </label>
+          </div>
+        </div>
+      )}
       <div style={{height:8}}/>
     </div>
   );
@@ -1305,10 +2031,15 @@ function App(){
   const[vehicles,setVehicles]=useState(loadVehicles);
   const[selectedVehicleId,setSelectedVehicleId]=useState('');
   const[showVehicleModal,setShowVehicleModal]=useState(false);
+  const[company,setCompany]=useState(loadCompany);
+  const[showCompanyModal,setShowCompanyModal]=useState(false);
+  const[fuelLogs,setFuelLogs]=useState(loadFuelLogs);
   const[flashMsg,setFlashMsg]=useState('');
   const[showInstallModal,setShowInstallModal]=useState(false);
   const[deferredPrompt,setDeferredPrompt]=useState(null);
   const[isStandalone,setIsStandalone]=useState(()=>window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true);
+
+  const flash=(m)=>{setFlashMsg(m);setTimeout(()=>setFlashMsg(''),3500)};
 
   useEffect(()=>{
     document.documentElement.setAttribute('data-theme',theme);
@@ -1408,13 +2139,14 @@ function App(){
     if(vehicle&&vehicle.consumption&&vehicle.fuelPrice){
       totalCost=kmRound(total*parseFloat(vehicle.consumption)/100*parseFloat(vehicle.fuelPrice));
     }
+    const finalOdoEnd = odoEnd || (odoStart ? String(Math.round(Number(odoStart) + total)) : '');
     const entry={
       id:uid(),date,
       vehicleId:vehicle?.id||'',
       vehicleName:vehicle?`${vehicle.name}${vehicle.plate?' '+vehicle.plate:''}`.trim():'',
       vehicle:vehicle?`${vehicle.name}${vehicle.plate?' '+vehicle.plate:''}`.trim():'',
       driver:vehicle?.driver||'',
-      odoStart,odoEnd,segments,segOpts,
+      odoStart,odoEnd:finalOdoEnd,segments,segOpts,
       total_km:kmRound(total),
       totalKm:kmRound(total),
       total_cost:totalCost,
@@ -1423,8 +2155,7 @@ function App(){
     };
     const h=[entry,...loadHistory()];
     saveHistory(h);
-    setFlashMsg(t.msgTripSaved);
-    setTimeout(()=>setFlashMsg(''),3000);
+    flash(t.msgTripSaved);
   };
 
   const mapPoints = [];
@@ -1449,6 +2180,7 @@ function App(){
         </div>
         <div className="header-actions">
           <button className="theme-toggle" onClick={handleReset} title={t.btnNewRoute} style={{color:segments.length>0?'var(--accent)':'var(--text-3)'}}><Icon name="newRoute" size={17}/></button>
+          <button className="theme-toggle" onClick={()=>setShowCompanyModal(true)} title={t.companyTitle}><Icon name="building" size={17}/></button>
           <button className="theme-toggle" onClick={()=>setShowVehicleModal(true)} title={t.vehiclesTitle}><Icon name="settings" size={17}/></button>
           <button className="theme-toggle" onClick={toggleLang} style={{fontSize:12,fontWeight:700,width:'auto',padding:'0 10px',minWidth:38}}>{lang==='en'?'RO':'EN'}</button>
           <button className="theme-toggle" onClick={()=>setTheme(th=>th==='dark'?'light':'dark')} title={theme==='dark'?t.themeLight:t.themeDark}><Icon name={theme==='dark'?'sun':'moon'} size={17}/></button>
@@ -1456,6 +2188,7 @@ function App(){
       </div>
 
       {calculating&&<div className="loader-overlay"><div className="loader-big"/><div className="loader-text">{t.loaderText}</div></div>}
+      {showCompanyModal&&<CompanyModal company={company} onSave={setCompany} onClose={()=>setShowCompanyModal(false)} t={t}/>}
       {showVehicleModal&&<VehicleModal vehicles={vehicles} onSave={setVehicles} onClose={()=>setShowVehicleModal(false)} t={t}/>}
       {showInstallModal&&<InstallModal canInstall={!!deferredPrompt} onNativeInstall={handleNativeInstall} onClose={()=>setShowInstallModal(false)} t={t}/>}
 
@@ -1482,10 +2215,11 @@ function App(){
           </div>
         )}
 
-        {tab==='route'&&<RouteView date={date} setDate={setDate} start={start} setStart={setStart} stops={stops} setStops={setStops} closeLoop={closeLoop} setCloseLoop={setCloseLoop} odoStart={odoStart} setOdoStart={setOdoStart} odoEnd={odoEnd} setOdoEnd={setOdoEnd} vehicles={vehicles} selectedVehicleId={selectedVehicleId} setSelectedVehicleId={setSelectedVehicleId} onCalculate={handleCalculate} calculating={calculating} t={t}/>}
+        {tab==='route'&&<RouteView date={date} setDate={setDate} start={start} setStart={setStart} stops={stops} setStops={setStops} closeLoop={closeLoop} setCloseLoop={setCloseLoop} odoStart={odoStart} setOdoStart={setOdoStart} odoEnd={odoEnd} setOdoEnd={setOdoEnd} vehicles={vehicles} selectedVehicleId={selectedVehicleId} setSelectedVehicleId={setSelectedVehicleId} onCalculate={handleCalculate} calculating={calculating} t={t} setFlashMsg={flash}/>}
         {tab==='segments'&&<SegmentsView segments={segments} segOpts={segOpts} setSegOpts={setSegOpts} vehicles={vehicles} selectedVehicleId={selectedVehicleId} onGoRoute={()=>setTab('route')} onSaveHistory={handleSaveHistory} t={t}/>}
-        {tab==='export'&&<ExportView segments={segments} segOpts={segOpts} date={date} start={start} stops={stops} vehicles={vehicles} selectedVehicleId={selectedVehicleId} setStart={setStart} setStops={setStops} setSegments={setSegments} setSegOpts={setSegOpts} setTab={setTab} t={t} lang={lang}/>}
-        {tab==='history'&&<HistoryView vehicles={vehicles} setTab={setTab} t={t}/>}
+        {tab==='fuel'&&<FuelView vehicles={vehicles} selectedVehicleId={selectedVehicleId} fuelLogs={fuelLogs} setFuelLogs={setFuelLogs} company={company} t={t} flash={flash}/>}
+        {tab==='export'&&<ExportView segments={segments} segOpts={segOpts} date={date} start={start} stops={stops} vehicles={vehicles} selectedVehicleId={selectedVehicleId} setStart={setStart} setStops={setStops} setSegments={setSegments} setSegOpts={setSegOpts} setTab={setTab} company={company} odoStart={odoStart} odoEnd={odoEnd} fuelLogs={fuelLogs} t={t} lang={lang}/>}
+        {tab==='history'&&<HistoryView vehicles={vehicles} setTab={setTab} company={company} fuelLogs={fuelLogs} templates={loadTemplates()} t={t} flash={flash}/>}
       </div>
 
       {/* Map is always mounted but shown/hidden; fixed layer between header and nav */}
@@ -1503,6 +2237,10 @@ function App(){
         <button className={`nav-tab ${tab==='segments'?'active':''}`} onClick={()=>setTab('segments')}>
           <span className="nav-icon"><Icon name="list" size={19}/></span>
           <span className="nav-label">{t.tabSegments}</span>
+        </button>
+        <button className={`nav-tab ${tab==='fuel'?'active':''}`} onClick={()=>setTab('fuel')}>
+          <span className="nav-icon"><Icon name="fuel" size={19}/></span>
+          <span className="nav-label">{t.tabFuel}</span>
         </button>
         <button className={`nav-tab ${tab==='export'?'active':''}`} onClick={()=>setTab('export')}>
           <span className="nav-icon"><Icon name="download" size={19}/></span>

@@ -361,9 +361,122 @@ app.post("/api/route", async (req: Request, res: Response) => {
   }
 });
 
+function haversineDistKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// ── Route Optimization (TSP 2-Opt) ───────────────────────────────────────────
+app.post("/api/route/optimize", async (req: Request, res: Response) => {
+  const { start, stops, returnToStart = false } = req.body || {};
+
+  if (!Array.isArray(start) || start.length < 2 || typeof start[0] !== "number" || typeof start[1] !== "number") {
+    return res.status(422).set(NO_CACHE_HEADERS).json({ detail: "Punctul de plecare este invalid." });
+  }
+
+  if (!Array.isArray(stops) || stops.length < 2) {
+    return res.status(422).set(NO_CACHE_HEADERS).json({ detail: "Sunt necesare cel puțin 2 opriri pentru optimizare." });
+  }
+
+  for (const s of stops) {
+    if (s.lat == null || s.lon == null || !isFinite(s.lat) || !isFinite(s.lon)) {
+      return res.status(422).set(NO_CACHE_HEADERS).json({ detail: `Oprirea „${s.text || s.display}” nu are coordonate valide.` });
+    }
+  }
+
+  // Calculate tour distance given an ordering of stops
+  const calcTourDist = (tour: typeof stops): number => {
+    let d = haversineDistKm(start[0], start[1], tour[0].lat, tour[0].lon);
+    for (let i = 0; i < tour.length - 1; i++) {
+      d += haversineDistKm(tour[i].lat, tour[i].lon, tour[i + 1].lat, tour[i + 1].lon);
+    }
+    if (returnToStart) {
+      d += haversineDistKm(tour[tour.length - 1].lat, tour[tour.length - 1].lon, start[0], start[1]);
+    }
+    return d;
+  };
+
+  const originalKm = kmRound(calcTourDist(stops));
+
+  // 1. Nearest Neighbor construction
+  let currentLat = start[0];
+  let currentLon = start[1];
+  const unvisited = [...stops];
+  const tour: typeof stops = [];
+
+  while (unvisited.length > 0) {
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < unvisited.length; i++) {
+      const dist = haversineDistKm(currentLat, currentLon, unvisited[i].lat, unvisited[i].lon);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
+    }
+    const [nextStop] = unvisited.splice(bestIdx, 1);
+    tour.push(nextStop);
+    currentLat = nextStop.lat;
+    currentLon = nextStop.lon;
+  }
+
+  // 2. 2-Opt refinement iterations
+  let improved = true;
+  let iterations = 0;
+  while (improved && iterations < 60) {
+    improved = false;
+    iterations++;
+    for (let i = 0; i < tour.length - 1; i++) {
+      for (let j = i + 1; j < tour.length; j++) {
+        const candidate = [
+          ...tour.slice(0, i),
+          ...tour.slice(i, j + 1).reverse(),
+          ...tour.slice(j + 1),
+        ];
+        if (calcTourDist(candidate) < calcTourDist(tour) - 0.001) {
+          tour.splice(0, tour.length, ...candidate);
+          improved = true;
+          break;
+        }
+      }
+      if (improved) break;
+    }
+  }
+
+  const optimizedKm = kmRound(calcTourDist(tour));
+  const savedKm = Math.max(0, kmRound(originalKm - optimizedKm));
+  const savedPercent = originalKm > 0 ? Math.round((savedKm / originalKm) * 100) : 0;
+
+  return res.set(NO_CACHE_HEADERS).json({
+    orderedStops: tour,
+    originalKm,
+    optimizedKm,
+    savedKm,
+    savedPercent,
+  });
+});
+
 // ── Export Excel ─────────────────────────────────────────────────────────────
 app.post("/api/export/excel", async (req: Request, res: Response) => {
-  const { rows, total, date_str, total_col_label = "Total KM" } = req.body || {};
+  const {
+    rows,
+    total,
+    date_str,
+    total_col_label = "Total KM",
+    company = null,
+    vehicle = "",
+    driver = "",
+    odo_start = "",
+    odo_end = "",
+  } = req.body || {};
+
   if (!Array.isArray(rows) || !rows.length) {
     return res.status(400).set(NO_CACHE_HEADERS).json({ detail: "Nicio înregistrare de exportat." });
   }
@@ -377,11 +490,36 @@ app.post("/api/export/excel", async (req: Request, res: Response) => {
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "TripLog";
     const sheet = workbook.addWorksheet("Foaie de parcurs", {
-      views: [{ state: "frozen", ySplit: 1 }],
+      views: [{ state: "frozen", ySplit: company ? 6 : 1 }],
     });
 
     const cols = Object.keys(rows[0]);
     const allCols = [...cols, total_col_label];
+
+    if (company && (company.name || company.cui)) {
+      // Company header rows
+      const r1 = sheet.addRow([cleanPdfText(company.name || "FOAIE DE PARCURS")]);
+      r1.font = { bold: true, size: 14, color: { argb: "FF312E81" } };
+
+      const details = [];
+      if (company.cui) details.push(`CUI/CIF: ${company.cui}`);
+      if (company.regCom) details.push(`Reg. Com.: ${company.regCom}`);
+      if (company.address) details.push(`Sediu: ${company.address}`);
+      const r2 = sheet.addRow([cleanPdfText(details.join(" | "))]);
+      r2.font = { size: 9, color: { argb: "FF4B5563" } };
+
+      const metaRow = [];
+      if (company.docSeries || company.docNumber) {
+        metaRow.push(`Serie: ${company.docSeries || ""} Nr: ${company.docNumber || ""}`);
+      }
+      if (vehicle) metaRow.push(`Vehicul: ${vehicle}`);
+      if (driver) metaRow.push(`Șofer: ${driver}`);
+      if (odo_start || odo_end) metaRow.push(`Km Odometru: ${odo_start || "—"} → ${odo_end || "—"}`);
+      const r3 = sheet.addRow([cleanPdfText(metaRow.join(" | "))]);
+      r3.font = { bold: true, size: 9.5, color: { argb: "FF374151" } };
+
+      sheet.addRow([]); // Blank spacer
+    }
 
     // Header row
     const headerRow = sheet.addRow(allCols);
@@ -391,7 +529,7 @@ app.post("/api/export/excel", async (req: Request, res: Response) => {
       cell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: "FF6366F1" },
+        fgColor: { argb: "FF4F46E5" }, // Indigo 600
       };
       cell.alignment = { horizontal: "center", vertical: "middle" };
     });
@@ -409,6 +547,18 @@ app.post("/api/export/excel", async (req: Request, res: Response) => {
         totalCell.numFmt = "0.0";
         totalCell.alignment = { horizontal: "center", vertical: "middle" };
       }
+    }
+
+    // Signatures footer row if company info provided
+    if (company) {
+      sheet.addRow([]);
+      const sigRow = sheet.addRow([
+        `Conducător auto: ${driver || "................"}`,
+        "",
+        "",
+        `Verificat / Aprobat: ${company.approver || "................"}`,
+      ]);
+      sigRow.font = { italic: true, size: 10, color: { argb: "FF4B5563" } };
     }
 
     // Auto-fit column widths
@@ -433,6 +583,69 @@ app.post("/api/export/excel", async (req: Request, res: Response) => {
   }
 });
 
+// ── Export Fuel Logs to Excel ────────────────────────────────────────────────
+app.post("/api/export/fuel", async (req: Request, res: Response) => {
+  const { fuel_logs = [] } = req.body || {};
+  if (!Array.isArray(fuel_logs) || !fuel_logs.length) {
+    return res.status(400).set(NO_CACHE_HEADERS).json({ detail: "Nicio alimentare de exportat." });
+  }
+
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Alimentări carburant");
+
+    const headers = ["Data", "Vehicul", "Nr. Înmatriculare", "Nr. Bon", "Stație / Furnizor", "Tip Carburant", "Cantitate (L/kWh)", "Preț Unitar (RON)", "Valoare Totală (RON)", "Km Bord"];
+    const headerRow = sheet.addRow(headers);
+    headerRow.height = 26;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10.5 };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF059669" } }; // Emerald 600
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+    });
+
+    let totalVal = 0;
+    let totalLiters = 0;
+    for (const log of fuel_logs) {
+      const val = parseFloat(log.totalRon) || (parseFloat(log.liters) * parseFloat(log.pricePerLiter)) || 0;
+      const lit = parseFloat(log.liters) || 0;
+      totalVal += val;
+      totalLiters += lit;
+
+      sheet.addRow([
+        log.date || "",
+        log.vehicleName || "",
+        log.plate || "",
+        log.receiptNumber || "",
+        log.station || "",
+        log.fuelType || "",
+        lit ? lit.toFixed(2) : "",
+        log.pricePerLiter ? parseFloat(log.pricePerLiter).toFixed(2) : "",
+        val ? val.toFixed(2) : "",
+        log.odometer || "",
+      ]);
+    }
+
+    const totalRow = sheet.addRow(["TOTAL", "", "", "", "", "", totalLiters.toFixed(2), "", totalVal.toFixed(2), ""]);
+    totalRow.font = { bold: true };
+
+    sheet.columns.forEach((col) => { col.width = 16; });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.set({
+      ...NO_CACHE_HEADERS,
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename=alimentari_${today().replace(/-/g, "")}.xlsx`,
+    });
+    return res.send(Buffer.from(buffer));
+  } catch (err: any) {
+    return res.status(500).set(NO_CACHE_HEADERS).json({ detail: err?.message || "Export error" });
+  }
+});
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 // ── Export PDF ───────────────────────────────────────────────────────────────
 app.post("/api/export/pdf", async (req: Request, res: Response) => {
   const {
@@ -443,6 +656,10 @@ app.post("/api/export/pdf", async (req: Request, res: Response) => {
     vehicle = "",
     driver = "",
     total_col_label = "Total KM",
+    company = null,
+    fuel_records = [],
+    odo_start = "",
+    odo_end = "",
   } = req.body || {};
 
   if (!Array.isArray(rows) || !rows.length) {
@@ -462,22 +679,59 @@ app.post("/api/export/pdf", async (req: Request, res: Response) => {
     });
 
     const pageWidth = doc.internal.pageSize.getWidth();
+    let curY = 32;
+
+    // ── Official Company Header (ANAF compliance) ──
+    if (company && (company.name || company.cui)) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(30, 41, 59); // Slate 800
+      doc.text(cleanPdfText(company.name || "COMPANIE"), 40, curY);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 116, 139); // Slate 500
+      const compDetails = [];
+      if (company.cui) compDetails.push(`CUI/CIF: ${company.cui}`);
+      if (company.regCom) compDetails.push(`Reg. Com.: ${company.regCom}`);
+      if (company.address) compDetails.push(`Sediu: ${company.address}`);
+      if (compDetails.length) {
+        doc.text(cleanPdfText(compDetails.join(" | ")), 40, curY + 14);
+      }
+
+      // Doc Series & Number on the right
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.5);
+      doc.setTextColor(79, 70, 229); // Indigo 600
+      const docNumStr = `SERIE: ${company.docSeries || "FP"} NR: ${company.docNumber || "001"}`;
+      doc.text(cleanPdfText(docNumStr), pageWidth - 40, curY, { align: "right" });
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(cleanPdfText(`Conform Art. 298 Codul Fiscal`), pageWidth - 40, curY + 14, { align: "right" });
+
+      curY += 34;
+    }
 
     // Title
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.setTextColor(67, 56, 202); // #4338CA
-    doc.text(cleanPdfText(title), pageWidth / 2, 40, { align: "center" });
+    doc.setFontSize(15);
+    doc.setTextColor(49, 46, 129); // Indigo 900
+    doc.text(cleanPdfText(title), pageWidth / 2, curY, { align: "center" });
+    curY += 16;
 
-    // Meta line (vehicle, driver)
+    // Meta line (vehicle, driver, odometer)
     const metaParts = [];
     if (vehicle) metaParts.push(`Vehicul: ${vehicle}`);
-    if (driver) metaParts.push(`Șofer: ${driver}`);
+    if (driver) metaParts.push(`Conducător auto: ${driver}`);
+    if (odo_start || odo_end) metaParts.push(`Km Odometru: ${odo_start || "—"} → ${odo_end || "—"}`);
     if (metaParts.length) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139); // #64748B
-      doc.text(cleanPdfText(metaParts.join(" | ")), pageWidth / 2, 56, { align: "center" });
+      doc.setTextColor(71, 85, 105);
+      doc.text(cleanPdfText(metaParts.join(" | ")), pageWidth / 2, curY, { align: "center" });
+      curY += 14;
     }
 
     const cols = Object.keys(rows[0]);
@@ -503,12 +757,12 @@ app.post("/api/export/pdf", async (req: Request, res: Response) => {
     }
 
     autoTableFn({
-      startY: metaParts.length ? 68 : 52,
+      startY: curY,
       head: [headers],
       body: bodyData,
       theme: "grid",
       headStyles: {
-        fillColor: [99, 102, 241], // #6366F1
+        fillColor: [79, 70, 229], // #4F46E5
         textColor: [255, 255, 255],
         fontStyle: "bold",
         fontSize: 8,
@@ -521,14 +775,72 @@ app.post("/api/export/pdf", async (req: Request, res: Response) => {
         valign: "middle",
         cellPadding: 4,
         textColor: [15, 23, 42],
-        lineColor: [226, 232, 240], // #E2E8F0
+        lineColor: [226, 232, 240],
         lineWidth: 0.5,
       },
       alternateRowStyles: {
-        fillColor: [248, 250, 252], // #F8FAFC
+        fillColor: [248, 250, 252],
       },
       margin: { left: 40, right: 40 },
     });
+
+    let finalY = (doc as any).lastAutoTable?.finalY || 450;
+
+    // Optional fuel summary table if fuel records provided
+    if (Array.isArray(fuel_records) && fuel_records.length > 0 && finalY < 480) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(5, 150, 105);
+      doc.text(cleanPdfText("Alimentări și Bonuri Carburant Înregistrate:"), 40, finalY + 16);
+
+      const fuelHeaders = ["Data", "Stație / Furnizor", "Nr. Bon", "Carburant", "Litri/kWh", "Preț/U", "Total (RON)"];
+      const fuelBody = fuel_records.map((f: any) => [
+        cleanPdfText(f.date || ""),
+        cleanPdfText(f.station || ""),
+        cleanPdfText(f.receiptNumber || ""),
+        cleanPdfText(f.fuelType || ""),
+        cleanPdfText(String(f.liters || "")),
+        cleanPdfText(String(f.pricePerLiter || "")),
+        cleanPdfText(String(f.totalRon || "")),
+      ]);
+
+      autoTableFn({
+        startY: finalY + 22,
+        head: [fuelHeaders],
+        body: fuelBody,
+        theme: "grid",
+        headStyles: {
+          fillColor: [5, 150, 105],
+          textColor: [255, 255, 255],
+          fontSize: 7,
+          fontStyle: "bold",
+        },
+        styles: { fontSize: 7, cellPadding: 3, halign: "center" },
+        margin: { left: 40, right: 40 },
+      });
+
+      finalY = (doc as any).lastAutoTable?.finalY || finalY + 60;
+    }
+
+    // Official signature section
+    const sigY = Math.min(finalY + 30, doc.internal.pageSize.getHeight() - 45);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    doc.setTextColor(51, 65, 85);
+    doc.text(cleanPdfText(`Conducător auto: ${driver || "................"} (Semnătură: _____________)`), 45, sigY);
+
+    const approverText = company?.approver ? `Verificat / Aprobat: ${company.approver}` : "Verificat și Aprobat (Semnătură / Ștampilă): _____________";
+    doc.text(cleanPdfText(approverText), pageWidth - 45, sigY, { align: "right" });
+
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text(
+      cleanPdfText("Document justificativ fiscal conform OMFP 2634/2015 și Codului Fiscal pentru deductibilitatea cheltuielilor cu vehiculele."),
+      pageWidth / 2,
+      sigY + 16,
+      { align: "center" }
+    );
 
     const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
     res.set({
