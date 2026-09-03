@@ -7,7 +7,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.HF_PORT ? parseInt(process.env.HF_PORT, 10) : 3000;
 
 const LOCATIONIQ_KEY = process.env.LOCATIONIQ_KEY || process.env.LOCATIONIQ_TOKEN || "";
 const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "";

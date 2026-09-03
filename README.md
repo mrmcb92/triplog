@@ -49,17 +49,16 @@ pinned: false
 
 | Component | Tehnologie |
 |-----------|-----------|
-| Backend | FastAPI (Python 3) + uvicorn |
+| Backend | Node.js (TypeScript) + Express |
 | Frontend | React 18 (CDN, fără build step), Babel in-browser |
 | Hartă | Leaflet.js 1.9 |
-| Geocodare | LocationIQ → Nominatim → maps.co (fallback în cascadă) |
-| Geocodare inversă | Nominatim `/reverse` |
+| Geocodare | LocationIQ → Nominatim → Photon → maps.co (fallback în cascadă) |
+| Geocodare inversă | LocationIQ → Nominatim `/reverse` |
 | Rutare | OSRM (router.project-osrm.org) |
-| Export Excel | pandas + openpyxl |
-| Export PDF | reportlab |
-| Cache server | SQLite via aiosqlite |
-| Rate limiting | slowapi (60 req/min per IP) |
-| Hosting | Hugging Face Spaces (Docker, plan gratuit) |
+| Export Excel | ExcelJS (XLSX) |
+| Export PDF | jsPDF + jspdf-autotable |
+| Hosting | Hugging Face Spaces (Docker, port 7860) |
+| CI/CD | GitHub Actions (deploy automat pe Hugging Face Hub) |
 
 ---
 
@@ -67,9 +66,11 @@ pinned: false
 
 ```
 triplog/
-├── main.py              # Backend FastAPI
-├── requirements.txt     # Dependențe Python
-├── Dockerfile           # Imagine Docker (deploy Hugging Face Spaces)
+├── .github/workflows/
+│   └── sync-to-hf.yml   # Deploy automat pe Hugging Face la git push
+├── server.ts            # Backend Express / TypeScript
+├── package.json         # Dependențe Node.js & scripturi de build
+├── Dockerfile           # Imagine Docker optimizată pentru Hugging Face Spaces (port 7860)
 ├── README.md
 └── static/
     ├── index.html       # Frontend React (single-file SPA)
@@ -91,7 +92,7 @@ triplog/
 
 2. Instalează dependențele:
    ```bash
-   pip install -r requirements.txt
+   npm install
    ```
 
 3. (Opțional) Setează variabilele de mediu:
@@ -104,31 +105,39 @@ triplog/
 
 4. Pornește serverul:
    ```bash
-   uvicorn main:app --reload
+   npm run dev
    ```
 
-5. Deschide [http://localhost:8000](http://localhost:8000) în browser.
+5. Deschide [http://localhost:3000](http://localhost:3000) în browser.
 
 ---
 
 ## ☁️ Deployment pe Hugging Face Spaces
 
-Repo-ul include un `Dockerfile`. Pași:
+Repo-ul este configurat pentru **deploy automat** și **deploy manual** pe Hugging Face Spaces cu **SDK: Docker**.
 
-1. Creează un Space nou pe [huggingface.co/new-space](https://huggingface.co/new-space) cu **SDK: Docker**
-2. Adaugă remote-ul și fă push:
-   ```bash
-   git remote add hf https://huggingface.co/spaces/<utilizator>/<space>
-   git push hf main
-   ```
-   (la parolă folosești un Access Token cu rol *Write*)
-3. HF construiește automat imaginea Docker (uvicorn pe portul `7860`)
-4. (Opțional) În Settings → *Variables and secrets* adaugă:
-   - `LOCATIONIQ_KEY` — cheie API LocationIQ pentru geocodare mai rapidă
-   - `CONTACT_EMAIL` — email pentru header-ul User-Agent Nominatim
-   - `ALLOWED_ORIGINS` — origini permise CORS (implicit `*`)
+### 1. Deploy automat (GitHub Actions)
+La fiecare `git push` în branch-ul `main` (sau `master`), workflow-ul `.github/workflows/sync-to-hf.yml` trimite automat codul către Space-ul tău Hugging Face.
 
-> Fonturile DejaVu (diacritice PDF) sunt instalate în container prin `fonts-dejavu-core` — nu sunt ținute ca binare în git, deoarece HF respinge fișierele binare.
+**Configurare unică în GitHub:**
+1. Mergi în repo-ul tău GitHub → **Settings** → **Secrets and variables** → **Actions**.
+2. Apasă **New repository secret**.
+3. Creează secretul:
+   - **Name**: `HF_TOKEN`
+   - **Value**: Token-ul tău de la [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) (cu permisiune **Write**).
+4. (Opțional) Dacă numele de utilizator sau Space-ul diferă de `mrmcb92/triplog`, poți seta și secretele:
+   - `HF_USERNAME` (implicit `mrmcb92`)
+   - `HF_SPACE` (implicit `triplog`)
+
+### 2. Deploy manual prin Git
+Dacă preferi să faci push direct din linia de comandă:
+```bash
+git remote add hf https://huggingface.co/spaces/mrmcb92/triplog
+git push --force hf main
+```
+(la autentificare folosești username-ul tău HF și un Access Token cu rol *Write*).
+
+HF construiește automat containerul Node.js folosind `Dockerfile` (pe portul `7860`).
 
 ---
 
@@ -204,17 +213,16 @@ Aplicația se deschide fullscreen, fără bara browserului, ca o aplicație nati
 
 | Component | Technology |
 |-----------|-----------|
-| Backend | FastAPI (Python 3) + uvicorn |
+| Backend | Node.js (TypeScript) + Express |
 | Frontend | React 18 (CDN, no build step), Babel in-browser |
 | Map | Leaflet.js 1.9 |
-| Geocoding | LocationIQ → Nominatim → maps.co (cascading fallback) |
-| Reverse geocoding | Nominatim `/reverse` |
+| Geocoding | LocationIQ → Nominatim → Photon → maps.co (cascading fallback) |
+| Reverse geocoding | LocationIQ → Nominatim `/reverse` |
 | Routing | OSRM (router.project-osrm.org) |
-| Excel export | pandas + openpyxl |
-| PDF export | reportlab |
-| Server cache | SQLite via aiosqlite |
-| Rate limiting | slowapi (60 req/min per IP) |
-| Hosting | Hugging Face Spaces (Docker, free tier) |
+| Excel export | ExcelJS (XLSX) |
+| PDF export | jsPDF + jspdf-autotable |
+| Hosting | Hugging Face Spaces (Docker, port 7860) |
+| CI/CD | GitHub Actions (automatic deploy to Hugging Face Hub) |
 
 ---
 
@@ -222,9 +230,11 @@ Aplicația se deschide fullscreen, fără bara browserului, ca o aplicație nati
 
 ```
 triplog/
-├── main.py              # FastAPI backend
-├── requirements.txt     # Python dependencies
-├── Dockerfile           # Docker image (Hugging Face Spaces deploy)
+├── .github/workflows/
+│   └── sync-to-hf.yml   # Automatic deployment to Hugging Face on push
+├── server.ts            # Express / TypeScript backend
+├── package.json         # Node.js dependencies & build scripts
+├── Dockerfile           # Docker image optimized for Hugging Face Spaces (port 7860)
 ├── README.md
 └── static/
     ├── index.html       # React frontend (single-file SPA)
@@ -246,7 +256,7 @@ triplog/
 
 2. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   npm install
    ```
 
 3. (Optional) Set environment variables:
@@ -259,31 +269,39 @@ triplog/
 
 4. Start the server:
    ```bash
-   uvicorn main:app --reload
+   npm run dev
    ```
 
-5. Open [http://localhost:8000](http://localhost:8000).
+5. Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## ☁️ Deployment on Hugging Face Spaces
 
-The repo includes a `Dockerfile`. Steps:
+The repo is configured for both **automatic deployment** and **manual deployment** to Hugging Face Spaces with **SDK: Docker**.
 
-1. Create a new Space at [huggingface.co/new-space](https://huggingface.co/new-space) with **SDK: Docker**
-2. Add the remote and push:
-   ```bash
-   git remote add hf https://huggingface.co/spaces/<user>/<space>
-   git push hf main
-   ```
-   (use an Access Token with *Write* role as the password)
-3. HF builds the Docker image automatically (uvicorn on port `7860`)
-4. (Optional) In Settings → *Variables and secrets* add:
-   - `LOCATIONIQ_KEY` — LocationIQ API key for faster geocoding
-   - `CONTACT_EMAIL` — email for Nominatim User-Agent header
-   - `ALLOWED_ORIGINS` — allowed CORS origins (default `*`)
+### 1. Automatic Deployment (GitHub Actions)
+On every `git push` to the `main` (or `master`) branch, the `.github/workflows/sync-to-hf.yml` workflow automatically syncs your code to your Hugging Face Space.
 
-> The DejaVu fonts (PDF diacritics) are installed in the container via `fonts-dejavu-core` — they are not kept as binaries in git, since HF rejects binary files.
+**One-time setup on GitHub:**
+1. Navigate to your GitHub repository → **Settings** → **Secrets and variables** → **Actions**.
+2. Click **New repository secret**.
+3. Create the secret:
+   - **Name**: `HF_TOKEN`
+   - **Value**: Your Hugging Face access token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) (must have **Write** permission).
+4. (Optional) If your username or Space name differs from `mrmcb92/triplog`:
+   - `HF_USERNAME` (defaults to `mrmcb92`)
+   - `HF_SPACE` (defaults to `triplog`)
+
+### 2. Manual Git Push
+To push directly from your terminal:
+```bash
+git remote add hf https://huggingface.co/spaces/mrmcb92/triplog
+git push --force hf main
+```
+(authenticate using your Hugging Face username and a token with *Write* permission).
+
+HF automatically builds the Node.js container from `Dockerfile` listening on port `7860`.
 
 ---
 

@@ -1,29 +1,29 @@
-FROM python:3.12-slim
+FROM node:20-slim
 
-# Fonturi DejaVu (diacritice în PDF) — căutate la /usr/share/fonts/truetype/dejavu
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends fonts-dejavu-core \
-    && rm -rf /var/lib/apt/lists/*
-
-# Hugging Face Spaces rulează containerul ca user 1000
+# Hugging Face Spaces runs as user with UID 1000
 RUN useradd -m -u 1000 user
 
 WORKDIR /app
 
-# Instalează dependențele întâi (cache de layer mai eficient)
-COPY --chown=user requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies first for better layer caching
+COPY --chown=user package*.json ./
+RUN npm install
 
-# Copiază restul aplicației
+# Copy the rest of the application
 COPY --chown=user . /app
+
+# Build server bundle to dist/server.cjs
+RUN npm run build
+
+# Remove development dependencies
+RUN npm prune --omit=dev
 
 USER user
 
-# HF Spaces expune portul 7860; cache-ul SQLite e efemer (writable)
-ENV CACHE_DB=/tmp/cache.db \
+ENV HF_PORT=7860 \
     PORT=7860 \
-    PYTHONUNBUFFERED=1
+    NODE_ENV=production
 
 EXPOSE 7860
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["node", "dist/server.cjs"]

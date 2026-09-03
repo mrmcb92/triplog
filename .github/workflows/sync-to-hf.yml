@@ -1,0 +1,31 @@
+name: Sync to Hugging Face Hub
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME || 'mrmcb92' }}
+          HF_SPACE: ${{ secrets.HF_SPACE || 'triplog' }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::HF_TOKEN secret is not configured in GitHub repository secrets! Go to GitHub repo -> Settings -> Secrets and variables -> Actions -> New repository secret -> Name: HF_TOKEN (with Write permissions from huggingface.co/settings/tokens)."
+            exit 1
+          fi
+          # Support both 'mrmcb92/triplog' and 'triplog' in HF_SPACE
+          SPACE_NAME="${HF_SPACE#*/}"
+          echo "Syncing repository to Hugging Face Space: ${HF_USERNAME}/${SPACE_NAME}..."
+          git push --force "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_USERNAME}/${SPACE_NAME}" HEAD:refs/heads/main
