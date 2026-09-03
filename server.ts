@@ -48,6 +48,22 @@ function sanitizeFormulaInjection(val: any): any {
   return val;
 }
 
+function cleanPdfText(text: any): string {
+  if (text == null) return "";
+  const str = String(text);
+  return str
+    .replace(/[șş]/g, "s")
+    .replace(/[ȘŞ]/g, "S")
+    .replace(/[țţ]/g, "t")
+    .replace(/[ȚŢ]/g, "T")
+    .replace(/[ă]/g, "a")
+    .replace(/[Ă]/g, "A")
+    .replace(/[â]/g, "a")
+    .replace(/[Â]/g, "A")
+    .replace(/[î]/g, "i")
+    .replace(/[Î]/g, "I");
+}
+
 // ── Health Check ─────────────────────────────────────────────────────────────
 app.get("/health", (req: Request, res: Response) => {
   res.set(NO_CACHE_HEADERS).json({ status: "ok" });
@@ -143,6 +159,39 @@ async function tryMapsCo(q: string, limit: number) {
   return null;
 }
 
+async function tryPhoton(q: string, limit: number) {
+  try {
+    const url = new URL("https://photon.komoot.io/api/");
+    url.searchParams.set("q", q);
+    url.searchParams.set("limit", String(limit));
+
+    const r = await fetch(url.toString(), {
+      headers: { "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) return null;
+    const js = await r.json();
+    if (Array.isArray(js?.features)) {
+      const items = js.features
+        .filter((f: any) => f?.geometry?.coordinates?.length >= 2)
+        .map((f: any) => {
+          const [lon, lat] = f.geometry.coordinates;
+          const p = f.properties || {};
+          const parts = [p.name, p.street, p.district, p.city, p.state, p.country].filter(Boolean);
+          return {
+            lat: parseFloat(lat),
+            lon: parseFloat(lon),
+            display: parts.length > 0 ? Array.from(new Set(parts)).join(", ") : q,
+          };
+        });
+      return items.length > 0 ? items : null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 app.get("/api/geocode", async (req: Request, res: Response) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const limit = Math.min(Math.max(parseInt(req.query.limit as string, 10) || 6, 1), 10);
@@ -159,6 +208,7 @@ app.get("/api/geocode", async (req: Request, res: Response) => {
   const results =
     (await tryLocationIQ(q, limit)) ||
     (await tryNominatim(q, limit)) ||
+    (await tryPhoton(q, limit)) ||
     (await tryMapsCo(q, limit)) ||
     [];
 
@@ -295,8 +345,12 @@ app.post("/api/route", async (req: Request, res: Response) => {
     for (let i = 0; i < raw.length; i += 3) {
       coords.push(raw[i]);
     }
-    if (raw.length && (coords.length === 0 || coords[coords.length - 1] !== raw[raw.length - 1])) {
-      coords.push(raw[raw.length - 1]);
+    if (raw.length > 0) {
+      const lastRaw = raw[raw.length - 1];
+      const lastCoord = coords[coords.length - 1];
+      if (!lastCoord || lastCoord[0] !== lastRaw[0] || lastCoord[1] !== lastRaw[1]) {
+        coords.push(lastRaw);
+      }
     }
 
     const result = { legs_km, legs_min, coords };
@@ -316,6 +370,8 @@ app.post("/api/export/excel", async (req: Request, res: Response) => {
   if (rows.length > 10000) {
     return res.status(400).set(NO_CACHE_HEADERS).json({ detail: "Prea multe rânduri (max 10000)." });
   }
+
+  const safeDateStr = (typeof date_str === "string" ? date_str : "export").replace(/[^a-zA-Z0-9_-]/g, "_");
 
   try {
     const workbook = new ExcelJS.Workbook();
@@ -369,7 +425,7 @@ app.post("/api/export/excel", async (req: Request, res: Response) => {
     res.set({
       ...NO_CACHE_HEADERS,
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename=foaie_parcurs_${date_str}.xlsx`,
+      "Content-Disposition": `attachment; filename=foaie_parcurs_${safeDateStr}.xlsx`,
     });
     return res.send(Buffer.from(buffer));
   } catch (err: any) {
@@ -396,6 +452,8 @@ app.post("/api/export/pdf", async (req: Request, res: Response) => {
     return res.status(400).set(NO_CACHE_HEADERS).json({ detail: "Prea multe rânduri (max 10000)." });
   }
 
+  const safeDateStr = (typeof date_str === "string" ? date_str : "export").replace(/[^a-zA-Z0-9_-]/g, "_");
+
   try {
     const doc = new jsPDF({
       orientation: "landscape",
@@ -409,7 +467,7 @@ app.post("/api/export/pdf", async (req: Request, res: Response) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
     doc.setTextColor(67, 56, 202); // #4338CA
-    doc.text(title, pageWidth / 2, 40, { align: "center" });
+    doc.text(cleanPdfText(title), pageWidth / 2, 40, { align: "center" });
 
     // Meta line (vehicle, driver)
     const metaParts = [];
@@ -419,21 +477,32 @@ app.post("/api/export/pdf", async (req: Request, res: Response) => {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(100, 116, 139); // #64748B
-      doc.text(metaParts.join(" | "), pageWidth / 2, 56, { align: "center" });
+      doc.text(cleanPdfText(metaParts.join(" | ")), pageWidth / 2, 56, { align: "center" });
     }
 
     const cols = Object.keys(rows[0]);
-    const headers = [...cols, total_col_label];
+    const headers = [...cols, total_col_label].map((h) => cleanPdfText(h));
 
     const bodyData = rows.map((row: any, i: number) => {
-      const rowVals = cols.map((c) => String(row[c] ?? ""));
-      rowVals.push(i === 0 ? (typeof total === "number" ? total.toFixed(1) : String(total)) : "");
+      const rowVals = cols.map((c) => cleanPdfText(row[c] ?? ""));
+      rowVals.push(i === 0 ? (typeof total === "number" ? total.toFixed(1) : cleanPdfText(String(total))) : "");
       return rowVals;
     });
 
     const autoTableFn: any =
-      typeof autoTable === "function" ? autoTable : (autoTable as any)?.default;
-    autoTableFn(doc, {
+      typeof (doc as any).autoTable === "function"
+        ? (opts: any) => (doc as any).autoTable(opts)
+        : typeof autoTable === "function"
+        ? (opts: any) => (autoTable as any)(doc, opts)
+        : (autoTable as any)?.default
+        ? (opts: any) => (autoTable as any).default(doc, opts)
+        : null;
+
+    if (!autoTableFn) {
+      throw new Error("PDF table generator unavailable");
+    }
+
+    autoTableFn({
       startY: metaParts.length ? 68 : 52,
       head: [headers],
       body: bodyData,
@@ -465,7 +534,7 @@ app.post("/api/export/pdf", async (req: Request, res: Response) => {
     res.set({
       ...NO_CACHE_HEADERS,
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename=foaie_parcurs_${date_str}.pdf`,
+      "Content-Disposition": `attachment; filename=foaie_parcurs_${safeDateStr}.pdf`,
     });
     return res.send(pdfBuffer);
   } catch (err: any) {

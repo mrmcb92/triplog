@@ -1,4 +1,4 @@
-const CACHE = 'foaie-parcurs-v3';
+const CACHE = 'foaie-parcurs-v4';
 
 // Fișiere care se cachează la instalare (app shell)
 const SHELL = [
@@ -54,7 +54,7 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     fetch(e.request, { cache: 'no-store' })
       .then(res => {
-        if (res.ok && res.type === 'basic') {
+        if (res.ok && (res.type === 'basic' || res.type === 'cors') && e.request.method === 'GET') {
           const copy = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, copy));
         }
